@@ -40,7 +40,7 @@ fun StartUpScreen(navController: NavController? = null, isPreview: Boolean = fal
 
         LaunchedEffect(Unit) {
             delay(3000)
-            navController?.navigate("LoginAndSignUpScreen") {
+            navController?.navigate("LoginScreen") {
                 popUpTo("StartUpScreen") { inclusive = true }
             }
         }

@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
+import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,7 +110,7 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .background(Color(0xFF10161F)),
+                .background(gradientDBlue),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
