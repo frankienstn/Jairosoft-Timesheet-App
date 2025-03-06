@@ -7,9 +7,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,23 +38,33 @@ import java.util.concurrent.TimeUnit
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileAnalyticsScreen(navController: NavController) {
     var isClockedIn by remember { mutableStateOf(false) }
     var timeCounter by remember { mutableLongStateOf(0L) }
-    var userName by remember { mutableStateOf("User") }
+    val userName by remember { mutableStateOf("User") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
     // animation states
     var isLogoutClicked by remember { mutableStateOf(false) }
     var isButtonClicked by remember { mutableStateOf(false) }
-    var isHomeClicked by remember { mutableStateOf(false) }
-    //
-    val logoutScale by animateFloatAsState(if (isLogoutClicked) 1.1f else 1f, label = "LogoutScale")
-    val buttonScale by animateFloatAsState(if (isButtonClicked) 1.1f else 1f, label = "ButtonScale")
-    val homeScale by animateFloatAsState(if (isHomeClicked) 1.1f else 1f, label = "HomeScale")
+
+    val trackedHours by remember { mutableIntStateOf(0) }
+
+    val logoutScale by animateFloatAsState(
+        if (isLogoutClicked) 1.1f else 1f,
+        label = "LogoutScale"
+    )
+    val buttonScale by animateFloatAsState(
+        if (isButtonClicked) 1.1f else 1f,
+        label = "ButtonScale"
+    )
+
 
     //font
     val afacad = FontFamily(
@@ -61,16 +80,22 @@ fun ProfileAnalyticsScreen(navController: NavController) {
         Font(R.font.inter, FontWeight.Normal)
     )
 
+    val poppins = FontFamily(
+        Font(R.font.poppinsregular, FontWeight.Normal)
+    )
+
+    val poppinsextrabold = FontFamily(
+        Font(R.font.poppinsextrabold, FontWeight.Normal)
+    )
+
+
     LaunchedEffect(isClockedIn) {
-        if (isClockedIn) {
-            while (true) {
-                delay(1000)
-                timeCounter++
-            }
-        } else {
-            timeCounter = 0L
+        while (isClockedIn) {
+            delay(1000)
+            timeCounter++
         }
     }
+
 
     val formattedTime = String.format(
         "%02d:%02d:%02d",
@@ -87,37 +112,6 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                 .background(Color(0xFF10161F)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .width(488.dp)
-                    .height(48.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.timesheetappbanner),
-                    contentDescription = "Jairosoft Logo Banner",
-                    modifier = Modifier.size(158.dp, 48.dp),
-                    contentScale = ContentScale.Crop
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.logout),
-                    contentDescription = "Logout",
-                    modifier = Modifier
-                        .size(48.dp, 49.dp)
-                        .padding(8.dp)
-                        .clickable {
-                            isLogoutClicked = true
-                            navController.navigate("LoginAndSignUpScreen")
-                            coroutineScope.launch {
-                                delay(300)
-                                isLogoutClicked = false
-                            }
-                        }
-                        .scale(logoutScale)
-                )
-            }
 
             Row(
                 modifier = Modifier
@@ -129,18 +123,22 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             ) {
                 Column {
                     Text(
+
+                        //change this so that instead of "User" it will show the email username instead of user
                         text = "Hi, $userName \uD83D\uDC4B",
                         color = Color(0xFF2E7BE1),
                         fontSize = 30.sp,
                         fontFamily = montserratextrabold
                     )
-                    Text(text = "Happy Working!",
+                    Text(
+                        text = "Happy Working!",
                         color = Color(0xFF888888),
                         fontSize = 12.sp,
                         fontFamily = inter
                     )
                 }
 
+                //Clock-In
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -158,21 +156,29 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                             .size(120.dp, 35.dp)
                             .scale(buttonScale),
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(0xFF28A745)
+                            containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(
+                                0xFF28A745
+                            )
                         )
                     ) {
-                        Text(text = if (isClockedIn) "Clock Out" else "Clock In",
-                            fontFamily = afacad)
+                        Text(
+                            text = if (isClockedIn) "Clock Out" else "Clock In",
+                            fontFamily = afacad
+                        )
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     //Running Time (Formatted as: hh:mm:ss)
                     Card(modifier = Modifier.size(120.dp, 35.dp)) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = formattedTime,
-                                fontFamily = afacad)
+                            Text(
+                                text = formattedTime,
+                                fontFamily = afacad
+                            )
                         }
                     }
                 }
@@ -180,7 +186,7 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 
             // Date Today
             Card(
-                modifier = Modifier.size(366.dp, 63.dp),
+                modifier = Modifier.size(366.dp, 50.dp),
                 colors = androidx.compose.material3.CardDefaults.cardColors(
                     containerColor = Color(
                         0xFF203859
@@ -189,7 +195,8 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center) {
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
                         text = "Today is ${
                             java.text.SimpleDateFormat(
@@ -209,18 +216,35 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             // On Going Projects
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .size(366.dp, 62.dp),
+                    .size(366.dp, 63.dp),
                 colors = androidx.compose.material3.CardDefaults.cardColors(
                     containerColor = Color(
                         0xFF89BAFA
                     )
                 )
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = "On Going Projects: N/A",
+                Box(
+                    modifier = Modifier
+                        .size(366.dp, 63.dp)
+                        .padding(start = 10.dp, top = 3.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = "On Going Projects:",
                         color = Color.Black,
-                        fontFamily = afacad)
+                        fontFamily = afacad,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                    )
+                    Text(
+                        text = " _ _      _ _     _ _     _ _ ",
+                        color = Color.Black,
+                        fontFamily = afacad,
+                        fontSize = 10.sp,
+                        modifier = Modifier
+                            .padding(bottom = 10.dp)
+                            .align(Alignment.BottomStart)
+                    )
                 }
             }
 
@@ -229,85 +253,275 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             //Tracked Hours
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .size(366.dp, 156.dp),
+                    .size(366.dp, 280.dp)
+                    .clickable {
+                        navController.navigate("TimesheetScreen")
+                    },
                 colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFFD9D9D9
-                    )
+                    containerColor = Color(0xFFD9D9D9)
                 )
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = "Tracked Hours",
-                        fontFamily = afacad)
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 10.dp, top = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Tracked Hours", fontFamily = afacad, color = Color.Black)
+                        Image(
+                            painter = painterResource(id = R.drawable.clock),
+                            contentDescription = "Clock Icon",
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                                Color(
+                                    0xFF10161F
+                                )
+                            ),
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(start = 4.dp)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .padding(start = 10.dp, top = 30.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        val hours = listOf(0, 2, 4, 6, 8)
+                        val days = listOf("M", "T", "W", "Th", "F")
+
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                hours.forEach { hour ->
+                                    Text(
+                                        text = "$hour",
+                                        fontFamily = afacad,
+                                        fontSize = 11.sp,
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp, 110.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxHeight(),
+                                    verticalArrangement = Arrangement.SpaceEvenly,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    days.forEach { day ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(24.dp)
+                                                    .height((trackedHours * 30).dp)
+                                                    .background(Color.Blue)
+                                            )
+                                            Text(
+                                                text = day,
+                                                fontFamily = afacad,
+                                                fontSize = 11.sp,
+                                                color = Color.Black
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "________________________________________",
+                            fontFamily = afacad,
+                            color = Color.LightGray,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+
+                            //change this so that when the user clicks the Clock In button it will register as bars for Hours Worked
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "00h and 00m",
+                                    fontFamily = poppinsextrabold,
+                                    fontSize = 11.sp,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = "Hours Worked",
+                                    fontFamily = poppins,
+                                    fontSize = 8.sp,
+                                    color = Color.Black
+                                )
+                            }
+
+                            //change this so that when the user clicks the Clock In button it will register as bars for Overtime
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "00h and 00m",
+                                    fontFamily = poppinsextrabold,
+                                    fontSize = 11.sp,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = "Overtime",
+                                    fontFamily = poppins,
+                                    fontSize = 8.sp,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             //Attendance
+            //change this to the design
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .size(500.dp, 337.dp), //it should be 365dp i changed it to 500 for testing
+                    .size(366.dp, 337.dp),
                 colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFF203859
-                    )
+                    containerColor = Color(0xFF203859)
                 )
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = "Attendance Log",
-                        fontFamily = afacad)
-                }
-            }
-        }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 10.dp, top = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Attendance", fontFamily = afacad, color = Color.White)
+                        Image(
+                            painter = painterResource(id = R.drawable.calendar),
+                            contentDescription = "Calendar Icon",
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                                Color(0xFFFFFFFF)
+                            ),
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(start = 4.dp)
+                        )
+                    }
 
-        // Navigations
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .background(Color(0xFF10161F))
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            // Timesheet
-            Image(
-                painter = painterResource(id = R.drawable.timesheet),
-                contentDescription = "Timesheet"
-            )
+                    Column(modifier = Modifier.fillMaxSize().padding(top = 40.dp)) {
+                        var showDatePicker by remember { mutableStateOf(false) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF666666))
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Date",
+                                fontFamily = poppins,
+                                fontSize = 11.sp,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { showDatePicker = true }
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Dropdown Arrow",
+                                tint = Color.White,
+                                modifier = Modifier.clickable { showDatePicker = true }
+                            )
 
-            // Home with Scroll to Top
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(id = R.drawable.home),
-                    contentDescription = "Home",
-                    modifier = Modifier
-                        .clickable {
-                            isHomeClicked = true
-                            coroutineScope.launch {
-                                scrollState.animateScrollTo(0)
-                                delay(300)
-                                isHomeClicked = false
+                            if (showDatePicker) {
+                                DatePickerDialog(
+                                    onDismissRequest = { showDatePicker = false },
+                                    confirmButton = {
+                                        TextButton(onClick = { showDatePicker = false }) {
+                                            Text("OK")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showDatePicker = false }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                ) {
+                                    DatePicker(state = rememberDatePickerState())
+                                }
+                            }
+
+                            Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(text = "Time In", fontFamily = poppins, fontSize = 11.sp, color = Color.White)
+                                Text(text = "Time Out", fontFamily = poppins, fontSize = 11.sp, color = Color.White)
                             }
                         }
-                        .scale(homeScale)
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.officialreddot),
-                    contentDescription = "Selected",
-                    modifier = Modifier.size(8.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color(0XFFFF4A4A))
-                )
+
+                        val attendanceList = remember { mutableStateListOf<Triple<String, String, String>>() }
+
+                        LaunchedEffect(isClockedIn) {
+                            if (isClockedIn) {
+                                val date = java.text.SimpleDateFormat("MM/dd/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                                val timeIn = java.text.SimpleDateFormat("hh:mm:ss a", java.util.Locale.getDefault()).format(java.util.Date())
+                                attendanceList.add(Triple(date, timeIn, "--"))
+                            } else if (attendanceList.isNotEmpty() && attendanceList.last().third == "--") {
+                                val timeOut = java.text.SimpleDateFormat("hh:mm:ss a", java.util.Locale.getDefault()).format(java.util.Date())
+                                val lastIndex = attendanceList.lastIndex
+                                attendanceList[lastIndex] = attendanceList[lastIndex].copy(third = timeOut)
+                            }
+                        }
+
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)) {
+                            attendanceList.forEach { (date, timeIn, timeOut) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = date, fontFamily = afacad, color = Color.White, modifier = Modifier.weight(1f))
+                                    Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(text = timeIn, fontFamily = afacad, color = Color.White)
+                                        Text(text = timeOut, fontFamily = afacad, color = Color.White)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    FloatingActionButton(
+                        onClick = {
+                            navController.navigate("AttendanceScreen")
+                        },
+                        containerColor = Color(0xFFFFFFFFF),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                            .size(332.dp, 41.dp)
+                    ) {
+                        Text(text = "Show Attendance", color = Color.Black, fontFamily = afacad, fontSize = 13.sp)
+                    }
+                }
             }
-
-
-            // Attendance
-            Image(
-                painter = painterResource(id = R.drawable.attendance),
-                contentDescription = "Attendance"
-            )
         }
     }
 }
@@ -315,6 +529,8 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun ProfileAnalyticsScreenPreview() {
-    val navController = rememberNavController()
-    ProfileAnalyticsScreen(navController)
+    JairosoftTimesheetTheme {
+        val navController = rememberNavController()
+        ProfileAnalyticsScreen(navController)
+    }
 }
