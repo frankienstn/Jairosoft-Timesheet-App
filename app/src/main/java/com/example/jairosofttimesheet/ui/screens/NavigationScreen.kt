@@ -4,25 +4,13 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -50,7 +38,7 @@ fun NavigationScreen(
 fun TopBar(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     var isLogoutClicked by remember { mutableStateOf(false) }
-    val logoutScale by animateFloatAsState(if (isLogoutClicked) 1.1f else 1f, label = "LogoutScale")
+    val logoutScale by animateFloatAsState(targetValue = if (isLogoutClicked) 1.1f else 1f, label = "LogoutScale")
 
     Row(
         modifier = Modifier
@@ -62,20 +50,24 @@ fun TopBar(navController: NavController) {
         Image(
             painter = painterResource(id = R.drawable.timesheetappbanner),
             contentDescription = "Jairosoft Logo Banner",
-            modifier = Modifier.size(158.dp, 48.dp),
-            contentScale = ContentScale.Crop
+            modifier = Modifier.size(158.dp, 48.dp)
         )
+
         Image(
             painter = painterResource(id = R.drawable.logout),
             contentDescription = "Logout",
             modifier = Modifier
-                .size(28.dp, 28.dp)
+                .size(28.dp)
                 .clickable {
-                    isLogoutClicked = true
-                    navController.navigate("LoginAndSignUpScreen")
-                    coroutineScope.launch {
-                        delay(300)
-                        isLogoutClicked = false
+                    if (!isLogoutClicked) {
+                        isLogoutClicked = true
+                        navController.navigate("LoginAndSignUpScreen") {
+                            popUpTo("StartUpScreen") { inclusive = true }
+                        }
+                        coroutineScope.launch {
+                            delay(300)
+                            isLogoutClicked = false
+                        }
                     }
                 }
                 .scale(logoutScale)
@@ -85,16 +77,8 @@ fun TopBar(navController: NavController) {
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
+    val currentRoute by navController.currentBackStackEntryAsState()
     val coroutineScope = rememberCoroutineScope()
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-    var isTimesheetClicked by remember { mutableStateOf(false) }
-    var isHomeClicked by remember { mutableStateOf(false) }
-    var isAttendanceClicked by remember { mutableStateOf(false) }
-
-    val timesheetScale by animateFloatAsState(if (isTimesheetClicked) 1.1f else 1f, label = "TimesheetScale")
-    val homeScale by animateFloatAsState(if (isHomeClicked) 1.1f else 1f, label = "HomeScale")
-    val attendanceScale by animateFloatAsState(if (isAttendanceClicked) 1.1f else 1f, label = "AttendanceScale")
 
     Row(
         modifier = Modifier
@@ -105,28 +89,23 @@ fun BottomNavigationBar(navController: NavController) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavigationItem(
-            navController,
-            R.drawable.timesheet,
-            "TimesheetScreen",
-            isTimesheetClicked,
-            timesheetScale
-        ) { isTimesheetClicked = it }
-
+            navController = navController,
+            iconRes = R.drawable.timesheet,
+            destination = "TimesheetScreen",
+            currentRoute = currentRoute?.destination?.route
+        )
         NavigationItem(
-            navController,
-            R.drawable.home,
-            "ProfileAnalyticsScreen",
-            isHomeClicked,
-            homeScale
-        ) { isHomeClicked = it }
-
+            navController = navController,
+            iconRes = R.drawable.home,
+            destination = "ProfileAnalyticsScreen",
+            currentRoute = currentRoute?.destination?.route
+        )
         NavigationItem(
-            navController,
-            R.drawable.attendance,
-            "AttendanceScreen",
-            isAttendanceClicked,
-            attendanceScale
-        ) { isAttendanceClicked = it }
+            navController = navController,
+            iconRes = R.drawable.attendance,
+            destination = "AttendanceScreen",
+            currentRoute = currentRoute?.destination?.route
+        )
     }
 }
 
@@ -135,12 +114,11 @@ fun NavigationItem(
     navController: NavController,
     iconRes: Int,
     destination: String,
-    isClicked: Boolean,
-    scale: Float,
-    onClick: (Boolean) -> Unit
+    currentRoute: String?
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    var isClicked by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isClicked) 1.1f else 1f, label = "NavigationScale")
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Image(
@@ -148,15 +126,18 @@ fun NavigationItem(
             contentDescription = null,
             modifier = Modifier
                 .clickable {
-                    onClick(true)
-                    navController.navigate(destination)
-                    coroutineScope.launch {
-                        delay(300)
-                        onClick(false)
+                    if (!isClicked && currentRoute != destination) {
+                        isClicked = true
+                        navController.navigate(destination)
+                        coroutineScope.launch {
+                            delay(300)
+                            isClicked = false
+                        }
                     }
                 }
                 .scale(scale)
         )
+
         if (currentRoute == destination) {
             Image(
                 painter = painterResource(id = R.drawable.officialreddot),
