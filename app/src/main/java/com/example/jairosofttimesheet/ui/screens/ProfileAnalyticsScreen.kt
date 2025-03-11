@@ -43,9 +43,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
-import android.Manifest
-import android.content.Context
-import android.location.Location
 import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,19 +54,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.location.LocationManagerCompat.getCurrentLocation
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.google.accompanist.permissions.rememberPermissionState
+import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.google.accompanist.permissions.*
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.maps.android.compose.*
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -215,10 +218,11 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                     }
                 }
 
-                if (showLocationDialog) {
-                    val dialogTitle = if (isClockedIn) "Confirm Clock-Out" else "Confirm Clock-In"
-                    val dialogText = if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
+                // Determine dialog content before showing the dialog
+                val dialogTitle = if (isClockedIn) "Confirm Clock-Out" else "Confirm Clock-In"
+                val dialogText = if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
 
+                if (showLocationDialog) {
                     AlertDialog(
                         onDismissRequest = { showLocationDialog = false },
                         confirmButton = {
@@ -228,23 +232,58 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                                     isClockedIn = false
                                     timeCounter = 0L
                                 } else {
-
                                     isClockedIn = true
                                 }
-                            })
-                            {
+                            }) {
                                 Text("Yes")
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = {
-                                showLocationDialog = false
-                            }) {
+                            TextButton(onClick = { showLocationDialog = false }) {
                                 Text("No")
                             }
                         },
                         title = { Text(dialogTitle) },
-                        text = { Text(dialogText) }
+                        text = {
+                            Column {
+                                Text(dialogText)
+
+                                // Live Map
+                                val context = LocalContext.current
+                                val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+                                var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+
+                                // Get real-time location
+                                LaunchedEffect(Unit) {
+                                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                                        if (location != null) {
+                                            userLocation = LatLng(location.latitude, location.longitude)
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                ) {
+                                    GoogleMap(
+                                        modifier = Modifier.fillMaxSize(),
+                                        cameraPositionState = rememberCameraPositionState {
+                                            position = CameraPosition.fromLatLngZoom(userLocation, 15f)
+                                        }
+                                    ) {
+                                        Marker(
+                                            state = MarkerState(position = userLocation),
+                                            title = "Your Location"
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     )
                 }
             }
