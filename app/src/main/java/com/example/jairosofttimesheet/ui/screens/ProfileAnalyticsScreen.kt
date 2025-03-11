@@ -1,5 +1,6 @@
 package com.example.jairosofttimesheet.ui.screens
 
+import android.content.pm.PackageManager
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,10 +40,66 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.core.content.ContextCompat
 import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
+import android.Manifest
+import android.content.Context
+import android.location.Location
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.PermissionChecker
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.location.LocationManagerCompat.getCurrentLocation
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.rememberCameraPositionState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShowLocationOnMap(location: LatLng) {
+    val uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(location, 12f)
+    }
+
+    GoogleMap(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        cameraPositionState = cameraPositionState,
+        uiSettings = uiSettings
+    )
+}
+
+private fun getCurrentLocation(context: Context, onLocationReceived: (Location) -> Unit) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+        location?.let {
+            onLocationReceived(it)
+        }
+    }
+}
+
+
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileAnalyticsScreen(navController: NavController) {
     var isClockedIn by remember { mutableStateOf(false) }
@@ -50,6 +107,29 @@ fun ProfileAnalyticsScreen(navController: NavController) {
     val userName by remember { mutableStateOf("User") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+
+    // Location variables
+    var showLocationDialog by remember { mutableStateOf(false) }
+    var userLatitude by remember { mutableStateOf(0.0) }
+    var userLongitude by remember { mutableStateOf(0.0) }
+
+    // Permissions state
+    val context = LocalContext.current
+    val locationPermissionState = rememberPermissionState(permission = Manifest.permission.ACCESS_FINE_LOCATION)
+
+    // Request permission if it's not granted
+    LaunchedEffect(locationPermissionState) {
+        if (!locationPermissionState.hasPermission) {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
+
+    // Show text based on permission
+    if (locationPermissionState.hasPermission) {
+        Text("Permission granted. You can access location now.")
+    } else {
+        Text("Location permission is required.")
+    }
 
     // animation states
     var isLogoutClicked by remember { mutableStateOf(false) }
@@ -65,7 +145,6 @@ fun ProfileAnalyticsScreen(navController: NavController) {
         if (isButtonClicked) 1.1f else 1f,
         label = "ButtonScale"
     )
-
 
     //font
     val afacad = FontFamily(
@@ -97,7 +176,6 @@ fun ProfileAnalyticsScreen(navController: NavController) {
         }
     }
 
-
     val formattedTime = String.format(
         "%02d:%02d:%02d",
         TimeUnit.SECONDS.toHours(timeCounter),
@@ -122,410 +200,499 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-
-                        //change this so that instead of "User" it will show the email username instead of user
-                        text = "Hi, $userName \uD83D\uDC4B",
-                        color = Color(0xFF2E7BE1),
-                        fontSize = 30.sp,
-                        fontFamily = montserratextrabold
-                    )
-                    Text(
-                        text = "Happy Working!",
-                        color = Color(0xFF888888),
-                        fontSize = 12.sp,
-                        fontFamily = inter
-                    )
-                }
-
-                //Clock-In
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                // User greeting and Clock In/Out button
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .width(393.dp)
+                        .height(79.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
-                        onClick = {
-                            isButtonClicked = true
-                            isClockedIn = !isClockedIn
-                            coroutineScope.launch {
-                                delay(300)
-                                isButtonClicked = false
-                            }
-                        },
-                        modifier = Modifier
-                            .size(120.dp, 35.dp)
-                            .scale(buttonScale),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(
-                                0xFF28A745
-                            )
-                        )
-                    ) {
+                    Column {
                         Text(
-                            text = if (isClockedIn) "Clock Out" else "Clock In",
-                            fontFamily = afacad
+                            text = "Hi, $userName \uD83D\uDC4B",
+                            color = Color(0xFF2E7BE1),
+                            fontSize = 30.sp,
+                            fontFamily = montserratextrabold
+                        )
+                        Text(
+                            text = "Happy Working!",
+                            color = Color(0xFF888888),
+                            fontSize = 12.sp,
+                            fontFamily = inter
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    //Running Time (Formatted as: hh:mm:ss)
-                    Card(modifier = Modifier.size(120.dp, 35.dp)) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                    // Clock-In / Clock-Out button
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                if (!isClockedIn) {
+                                    showLocationDialog = true
+                                    isButtonClicked = true
+                                } else {
+                                    isClockedIn = false
+                                    timeCounter = 0L
+                                }
+                            },
+                            modifier = Modifier
+                                .size(120.dp, 35.dp)
+                                .scale(buttonScale),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(0xFF28A745)
+                            )
                         ) {
                             Text(
-                                text = formattedTime,
-                                fontFamily = afacad
+                                text = if (isClockedIn) "Clock Out" else "Clock In",
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Running Time (Formatted as: hh:mm:ss)
+                        Card(modifier = Modifier.size(120.dp, 35.dp)) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = formattedTime,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        // Show the confirmation dialog when needed
+                        if (showLocationDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showLocationDialog = false },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        showLocationDialog = false
+                                        isClockedIn = true
+                                        coroutineScope.launch {
+                                            delay(300)
+                                            isButtonClicked = false
+                                        }
+                                    }) {
+                                        Text("Yes, clock me in!")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        showLocationDialog = false
+                                        isButtonClicked = false
+                                    }) {
+                                        Text("No")
+                                    }
+                                },
+                                title = { Text("Confirm Clock-In") },
+                                text = {
+                                    Column {
+                                        Text("Your location has been detected. Do you want to proceed?")
+                                        ShowLocationOnMap(location = LatLng(userLatitude, userLongitude))
+                                    }
+                                }
                             )
                         }
                     }
                 }
             }
 
-            // Date Today
-            Card(
-                modifier = Modifier.size(366.dp, 50.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFF203859
+                // Date Today
+                Card(
+                    modifier = Modifier.size(366.dp, 50.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(
+                            0xFF203859
+                        )
                     )
-                )
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Today is ${
-                            java.text.SimpleDateFormat(
-                                "MM/dd/yyyy, EEEE",
-                                java.util.Locale.getDefault()
-                            ).format(java.util.Date())
-                        }",
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontFamily = afacadmedium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // On Going Projects
-            Card(
-                modifier = Modifier
-                    .size(366.dp, 63.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFF89BAFA
-                    )
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(366.dp, 63.dp)
-                        .padding(start = 10.dp, top = 3.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = "On Going Projects:",
-                        color = Color.Black,
-                        fontFamily = afacad,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                    )
-                    Text(
-                        text = " _ _      _ _     _ _     _ _ ",
-                        color = Color.Black,
-                        fontFamily = afacad,
-                        fontSize = 10.sp,
-                        modifier = Modifier
-                            .padding(bottom = 10.dp)
-                            .align(Alignment.BottomStart)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            //Tracked Hours
-            Card(
-                modifier = Modifier
-                    .size(366.dp, 280.dp)
-                    .clickable {
-                        navController.navigate("TimesheetScreen")
-                    },
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(0xFFD9D9D9)
-                )
-            ) {
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(start = 10.dp, top = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "Tracked Hours", fontFamily = afacad, color = Color.Black)
-                        Image(
-                            painter = painterResource(id = R.drawable.clock),
-                            contentDescription = "Clock Icon",
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                                Color(
-                                    0xFF10161F
-                                )
-                            ),
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(start = 4.dp)
+                        Text(
+                            text = "Today is ${
+                                SimpleDateFormat(
+                                    "MM/dd/yyyy, EEEE",
+                                    Locale.getDefault()
+                                ).format(Date())
+                            }",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontFamily = afacadmedium
                         )
                     }
+                }
 
-                    Column(
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // On Going Projects
+                Card(
+                    modifier = Modifier
+                        .size(366.dp, 63.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(
+                            0xFF89BAFA
+                        )
+                    )
+                ) {
+                    Box(
                         modifier = Modifier
-                            .padding(start = 10.dp, top = 30.dp),
-                        horizontalAlignment = Alignment.Start
+                            .size(366.dp, 63.dp)
+                            .padding(start = 10.dp, top = 3.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        val hours = listOf(0, 2, 4, 6, 8)
-                        val days = listOf("M", "T", "W", "Th", "F")
+                        Text(
+                            text = "On Going Projects:",
+                            color = Color.Black,
+                            fontFamily = afacad,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                        )
+                        Text(
+                            text = " _ _      _ _     _ _     _ _ ",
+                            color = Color.Black,
+                            fontFamily = afacad,
+                            fontSize = 10.sp,
+                            modifier = Modifier
+                                .padding(bottom = 10.dp)
+                                .align(Alignment.BottomStart)
+                        )
+                    }
+                }
 
-                        Column {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                //Tracked Hours
+                Card(
+                    modifier = Modifier
+                        .size(366.dp, 280.dp)
+                        .clickable {
+                            navController.navigate("TimesheetScreen")
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFD9D9D9)
+                    )
+                ) {
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 10.dp, top = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "Tracked Hours", fontFamily = afacad, color = Color.Black)
+                            Image(
+                                painter = painterResource(id = R.drawable.clock),
+                                contentDescription = "Clock Icon",
+                                colorFilter = ColorFilter.tint(
+                                    Color(
+                                        0xFF10161F
+                                    )
+                                ),
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(start = 4.dp)
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .padding(start = 10.dp, top = 30.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            val hours = listOf(0, 2, 4, 6, 8)
+                            val days = listOf("M", "T", "W", "Th", "F")
+
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    hours.forEach { hour ->
+                                        Text(
+                                            text = "$hour",
+                                            fontFamily = afacad,
+                                            fontSize = 11.sp,
+                                            color = Color.Black
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp, 110.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxHeight(),
+                                        verticalArrangement = Arrangement.SpaceEvenly,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        days.forEach { day ->
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(24.dp)
+                                                        .height((trackedHours * 30).dp)
+                                                        .background(Color.Blue)
+                                                )
+                                                Text(
+                                                    text = day,
+                                                    fontFamily = afacad,
+                                                    fontSize = 11.sp,
+                                                    color = Color.Black
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text(
+                                text = "________________________________________",
+                                fontFamily = afacad,
+                                color = Color.LightGray,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                             ) {
-                                hours.forEach { hour ->
+
+                                //change this so that when the user clicks the Clock In button it will register as bars for Hours Worked
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
                                     Text(
-                                        text = "$hour",
-                                        fontFamily = afacad,
+                                        text = "00h and 00m",
+                                        fontFamily = poppinsextrabold,
                                         fontSize = 11.sp,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "Hours Worked",
+                                        fontFamily = poppins,
+                                        fontSize = 8.sp,
+                                        color = Color.Black
+                                    )
+                                }
+
+                                //change this so that when the user clicks the Clock In button it will register as bars for Overtime
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "00h and 00m",
+                                        fontFamily = poppinsextrabold,
+                                        fontSize = 11.sp,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "Overtime",
+                                        fontFamily = poppins,
+                                        fontSize = 8.sp,
                                         color = Color.Black
                                     )
                                 }
                             }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp, 110.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxHeight(),
-                                    verticalArrangement = Arrangement.SpaceEvenly,
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    days.forEach { day ->
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .width(24.dp)
-                                                    .height((trackedHours * 30).dp)
-                                                    .background(Color.Blue)
-                                            )
-                                            Text(
-                                                text = day,
-                                                fontFamily = afacad,
-                                                fontSize = 11.sp,
-                                                color = Color.Black
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = "________________________________________",
-                            fontFamily = afacad,
-                            color = Color.LightGray,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                        ) {
-
-                            //change this so that when the user clicks the Clock In button it will register as bars for Hours Worked
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "00h and 00m",
-                                    fontFamily = poppinsextrabold,
-                                    fontSize = 11.sp,
-                                    color = Color.Black
-                                )
-                                Text(
-                                    text = "Hours Worked",
-                                    fontFamily = poppins,
-                                    fontSize = 8.sp,
-                                    color = Color.Black
-                                )
-                            }
-
-                            //change this so that when the user clicks the Clock In button it will register as bars for Overtime
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "00h and 00m",
-                                    fontFamily = poppinsextrabold,
-                                    fontSize = 11.sp,
-                                    color = Color.Black
-                                )
-                                Text(
-                                    text = "Overtime",
-                                    fontFamily = poppins,
-                                    fontSize = 8.sp,
-                                    color = Color.Black
-                                )
-                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            //Attendance
-            //change this to the design
-            Card(
-                modifier = Modifier
-                    .size(366.dp, 337.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = Color(0xFF203859)
-                )
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(start = 10.dp, top = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Attendance", fontFamily = afacad, color = Color.White)
-                        Image(
-                            painter = painterResource(id = R.drawable.calendar),
-                            contentDescription = "Calendar Icon",
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                                Color(0xFFFFFFFF)
-                            ),
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(start = 4.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.fillMaxSize().padding(top = 40.dp)) {
-                        var showDatePicker by remember { mutableStateOf(false) }
+                //Attendance
+                //change this to the design
+                Card(
+                    modifier = Modifier
+                        .size(366.dp, 337.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF203859)
+                    )
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFF666666))
-                                .padding(8.dp),
+                                .align(Alignment.TopStart)
+                                .padding(start = 10.dp, top = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Date",
-                                fontFamily = poppins,
-                                fontSize = 11.sp,
-                                color = Color.White,
+                            Text(text = "Attendance", fontFamily = afacad, color = Color.White)
+                            Image(
+                                painter = painterResource(id = R.drawable.calendar),
+                                contentDescription = "Calendar Icon",
+                                colorFilter = ColorFilter.tint(
+                                    Color(0xFFFFFFFF)
+                                ),
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { showDatePicker = true }
+                                    .size(24.dp)
+                                    .padding(start = 4.dp)
                             )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Dropdown Arrow",
-                                tint = Color.White,
-                                modifier = Modifier.clickable { showDatePicker = true }
-                            )
-
-                            if (showDatePicker) {
-                                DatePickerDialog(
-                                    onDismissRequest = { showDatePicker = false },
-                                    confirmButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("OK")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                ) {
-                                    DatePicker(state = rememberDatePickerState())
-                                }
-                            }
-
-                            Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(text = "Time In", fontFamily = poppins, fontSize = 11.sp, color = Color.White)
-                                Text(text = "Time Out", fontFamily = poppins, fontSize = 11.sp, color = Color.White)
-                            }
                         }
 
-                        val attendanceList = remember { mutableStateListOf<Triple<String, String, String>>() }
-
-                        LaunchedEffect(isClockedIn) {
-                            if (isClockedIn) {
-                                val date = java.text.SimpleDateFormat("MM/dd/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
-                                val timeIn = java.text.SimpleDateFormat("hh:mm:ss a", java.util.Locale.getDefault()).format(java.util.Date())
-                                attendanceList.add(Triple(date, timeIn, "--"))
-                            } else if (attendanceList.isNotEmpty() && attendanceList.last().third == "--") {
-                                val timeOut = java.text.SimpleDateFormat("hh:mm:ss a", java.util.Locale.getDefault()).format(java.util.Date())
-                                val lastIndex = attendanceList.lastIndex
-                                attendanceList[lastIndex] = attendanceList[lastIndex].copy(third = timeOut)
-                            }
-                        }
-
-                        Column(modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)) {
-                            attendanceList.forEach { (date, timeIn, timeOut) ->
-                                Row(
+                        Column(modifier = Modifier.fillMaxSize().padding(top = 40.dp)) {
+                            var showDatePicker by remember { mutableStateOf(false) }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF666666))
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Date",
+                                    fontFamily = poppins,
+                                    fontSize = 11.sp,
+                                    color = Color.White,
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .weight(1f)
+                                        .clickable { showDatePicker = true }
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Dropdown Arrow",
+                                    tint = Color.White,
+                                    modifier = Modifier.clickable { showDatePicker = true }
+                                )
+
+                                if (showDatePicker) {
+                                    DatePickerDialog(
+                                        onDismissRequest = { showDatePicker = false },
+                                        confirmButton = {
+                                            TextButton(onClick = { showDatePicker = false }) {
+                                                Text("OK")
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(onClick = { showDatePicker = false }) {
+                                                Text("Cancel")
+                                            }
+                                        }
+                                    ) {
+                                        DatePicker(state = rememberDatePickerState())
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.weight(2f),
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = date, fontFamily = afacad, color = Color.White, modifier = Modifier.weight(1f))
-                                    Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(text = timeIn, fontFamily = afacad, color = Color.White)
-                                        Text(text = timeOut, fontFamily = afacad, color = Color.White)
+                                    Text(
+                                        text = "Time In",
+                                        fontFamily = poppins,
+                                        fontSize = 11.sp,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Time Out",
+                                        fontFamily = poppins,
+                                        fontSize = 11.sp,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            val attendanceList =
+                                remember { mutableStateListOf<Triple<String, String, String>>() }
+
+                            LaunchedEffect(isClockedIn) {
+                                if (isClockedIn) {
+                                    val date = SimpleDateFormat(
+                                        "MM/dd/yyyy",
+                                        Locale.getDefault()
+                                    ).format(Date())
+                                    val timeIn = SimpleDateFormat(
+                                        "hh:mm:ss a",
+                                        Locale.getDefault()
+                                    ).format(Date())
+                                    attendanceList.add(Triple(date, timeIn, "--"))
+                                } else if (attendanceList.isNotEmpty() && attendanceList.last().third == "--") {
+                                    val timeOut = SimpleDateFormat(
+                                        "hh:mm:ss a",
+                                        Locale.getDefault()
+                                    ).format(Date())
+                                    val lastIndex = attendanceList.lastIndex
+                                    attendanceList[lastIndex] =
+                                        attendanceList[lastIndex].copy(third = timeOut)
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier.verticalScroll(rememberScrollState()).weight(1f)
+                            ) {
+                                attendanceList.forEach { (date, timeIn, timeOut) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = date,
+                                            fontFamily = afacad,
+                                            color = Color.White,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Row(
+                                            modifier = Modifier.weight(2f),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = timeIn,
+                                                fontFamily = afacad,
+                                                color = Color.White
+                                            )
+                                            Text(
+                                                text = timeOut,
+                                                fontFamily = afacad,
+                                                color = Color.White
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    FloatingActionButton(
-                        onClick = {
-                            navController.navigate("AttendanceScreen")
-                        },
-                        containerColor = Color(0xFFFFFFFFF),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                            .size(332.dp, 41.dp)
-                    ) {
-                        Text(text = "Show Attendance", color = Color.Black, fontFamily = afacad, fontSize = 13.sp)
+                        FloatingActionButton(
+                            onClick = {
+                                navController.navigate("AttendanceScreen")
+                            },
+                            containerColor = Color(0xFFFFFFFFF),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
+                                .size(332.dp, 41.dp)
+                        ) {
+                            Text(
+                                text = "Show Attendance",
+                                color = Color.Black,
+                                fontFamily = afacad,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
+
 
 @Preview(showBackground = true)
 @Composable

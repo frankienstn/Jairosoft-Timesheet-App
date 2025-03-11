@@ -72,7 +72,7 @@ fun TopBar(navController: NavController) {
                 .size(28.dp, 28.dp)
                 .clickable {
                     isLogoutClicked = true
-                    navController.navigate("LoginAndSignUpScreen")
+                    navController.navigate("LoginScreen")
                     coroutineScope.launch {
                         delay(300)
                         isLogoutClicked = false
