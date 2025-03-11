@@ -161,6 +161,21 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+
+
+            // On-Going Projects
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF89BAFA))
+            ) {
+                Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.CenterStart) {
+                    Text(text = "On-Going Projects:", fontSize = 16.sp, color = Color.Black)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Tracked Hours
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -203,6 +218,14 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                         }
                     }
                 }
+                // Show Attendance Button (Retained)
+                Button(
+                    onClick = { navController.navigate("AttendanceScreen") },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Text(text = "Show Attendance", color = Color.Black, fontSize = 14.sp)
+                }
             }
 
             // Show Clock-In Confirmation Popup
@@ -223,6 +246,7 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                     text = { Text("Confirm Clock In Location:\n$currentLocation") }
                 )
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
         }
