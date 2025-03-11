@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AttendanceScreen (navController: NavController) {
-    }
+}
 
 
 @Preview(showBackground = true)
