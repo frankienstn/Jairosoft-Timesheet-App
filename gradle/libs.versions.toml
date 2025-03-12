@@ -4,6 +4,8 @@ accompanistPermissionsVersion = "0.25.1"
 agp = "8.8.1"
 coreSplashscreen = "1.0.1"
 googleAccompanistPermissions = "0.27.0"
+googleHiltAndroid = "2.50"
+hiltNavigationCompose = "1.2.0"
 kotlin = "2.0.0"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -12,6 +14,7 @@ espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 composeBom = "2024.04.01"
+lifecycleViewmodelCompose = "2.8.7"
 mapsCompose = "2.5.0"
 mapsUtilsKtx = "2.3.0"
 navigationRuntimeKtx = "2.8.7"
@@ -25,8 +28,14 @@ playServicesMaps = "19.1.0"
 accompanist-permissions-v0270 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "googleAccompanistPermissions" }
 accompanist-permissions-v0280 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 core-splashscreen = { module = "androix.core:core-splashscreen", version.ref = "coreSplashscreen" }
 google-accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissionsVersion" }
+google-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "googleHiltAndroid" }
+hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "googleHiltAndroid" }
+hilt-android-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "googleHiltAndroid" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

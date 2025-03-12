@@ -41,12 +41,15 @@ android {
 
 dependencies {
 
-    //location
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Location dependencies
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
     implementation("com.google.accompanist:accompanist-permissions:0.30.1")
-
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -1,7 +1,8 @@
 package com.example.jairosofttimesheet.ui.screens
 
+import android.Manifest
 import android.content.pm.PackageManager
-import androidx.compose.animation.core.animateFloatAsState
+import android.location.Geocoder
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,59 +26,55 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.jairosofttimesheet.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.core.content.ContextCompat
 import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
-import android.location.LocationManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.PermissionChecker
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.*
+import android.os.Looper
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import com.google.accompanist.permissions.*
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.compose.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 
-
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ProfileAnalyticsScreen(navController: NavController) {
+
     var isClockedIn by remember { mutableStateOf(false) }
     var timeCounter by remember { mutableLongStateOf(0L) }
     val userName by remember { mutableStateOf("User") }
@@ -101,6 +98,67 @@ fun ProfileAnalyticsScreen(navController: NavController) {
         if (isButtonClicked) 1.1f else 1f,
         label = "ButtonScale"
     )
+
+    // Location permissions
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    // Request permissions if not granted
+    if (permissionState.status != PermissionStatus.Granted) {
+        LaunchedEffect(Unit) {
+            permissionState.launchPermissionRequest()
+        }
+    }
+
+    // Location request and callback
+    val locationRequest = LocationRequest.create().apply {
+        priority = Priority.PRIORITY_HIGH_ACCURACY
+        interval = 5000
+    }
+
+    var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+    var locationText by remember { mutableStateOf("Fetching location...") } // Separate text variable
+
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation?.let { location ->
+                userLocation = LatLng(location.latitude, location.longitude)
+                val geocoder = Geocoder(context, Locale.getDefault())
+                try {
+                    val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                    if (!addressList.isNullOrEmpty()) {
+                        val address = addressList[0]
+                        locationText = address.locality ?: address.subAdminArea ?: "Unknown Location"
+                    }
+                } catch (e: IOException) {
+                    locationText = "Unable to get location name"
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(permissionState.status) {
+        if (permissionState.status == PermissionStatus.Granted) {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest, locationCallback, Looper.getMainLooper()
+            )
+        } else {
+            locationText = "Permission denied"
+        }
+    }
+
+
+
+    LaunchedEffect(permissionState.status) {
+        if (permissionState.status == PermissionStatus.Granted) {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest, locationCallback, Looper.getMainLooper()
+            )
+        } else {
+            locationText = "Permission denied"
+        }
+    }
 
     //font
     val afacad = FontFamily(
@@ -157,7 +215,7 @@ fun ProfileAnalyticsScreen(navController: NavController) {
             ) {
                 Column {
                     Text(
-                        text = "Hi, $userName \uD83D\uDC4B",
+                        text = "Hi, User",
                         color = Color(0xFF2E7BE1),
                         fontSize = 30.sp,
                         fontFamily = montserratextrabold
@@ -193,7 +251,9 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                             .size(120.dp, 35.dp)
                             .scale(buttonScale),
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(0xFF28A745)
+                            containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(
+                                0xFF28A745
+                            )
                         )
                     ) {
                         Text(
@@ -220,7 +280,8 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 
                 // Determine dialog content before showing the dialog
                 val dialogTitle = if (isClockedIn) "Confirm Clock-Out" else "Confirm Clock-In"
-                val dialogText = if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
+                val dialogText =
+                    if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
 
                 if (showLocationDialog) {
                     AlertDialog(
@@ -248,22 +309,56 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                             Column {
                                 Text(dialogText)
 
-                                // Live Map
                                 val context = LocalContext.current
-                                val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+                                val fusedLocationClient = remember {
+                                    LocationServices.getFusedLocationProviderClient(context)
+                                }
+                                val locationRequest = LocationRequest.create().apply {
+                                    priority = Priority.PRIORITY_HIGH_ACCURACY
+                                    interval = 5000 // Update every 5 seconds
+                                }
                                 var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+                                var locationText by remember { mutableStateOf("Fetching location...") }
 
-                                // Get real-time location
-                                LaunchedEffect(Unit) {
-                                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                                        if (location != null) {
-                                            userLocation = LatLng(location.latitude, location.longitude)
+                                val locationCallback = object : LocationCallback() {
+                                    override fun onLocationResult(locationResult: LocationResult) {
+                                        locationResult.lastLocation?.let { location ->
+                                            userLocation =
+                                                LatLng(location.latitude, location.longitude)
+                                            locationText =
+                                                "Lat: ${location.latitude}, Lng: ${location.longitude}"
                                         }
                                     }
                                 }
 
+                                // Start location updates
+                                LaunchedEffect(Unit) {
+                                    if (ActivityCompat.checkSelfPermission(
+                                            context, Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        fusedLocationClient.requestLocationUpdates(
+                                            locationRequest,
+                                            locationCallback,
+                                            Looper.getMainLooper()
+                                        )
+                                    } else {
+                                        locationText = "Permission denied"
+                                    }
+                                }
+
+                                // **Live Location TextField**
+                                OutlinedTextField(
+                                    value = locationText,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Current Location") }
+                                )
+
                                 Spacer(modifier = Modifier.height(8.dp))
 
+                                // **Live Map**
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -273,7 +368,8 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                                     GoogleMap(
                                         modifier = Modifier.fillMaxSize(),
                                         cameraPositionState = rememberCameraPositionState {
-                                            position = CameraPosition.fromLatLngZoom(userLocation, 15f)
+                                            position =
+                                                CameraPosition.fromLatLngZoom(userLocation, 15f)
                                         }
                                     ) {
                                         Marker(
@@ -503,11 +599,9 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             //Attendance
-            //change this to the design
             Card(
                 modifier = Modifier
                     .size(366.dp, 337.dp),
@@ -633,25 +727,39 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                                         .padding(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // Location at the start of the row with 10 character limit
                                     Text(
-                                        text = date,
+                                        text = locationText.take(10) + if (locationText.length > 10) "..." else "",
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        fontSize = 11.sp // Uniform font size
                                     )
                                     Row(
                                         modifier = Modifier.weight(2f),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
-                                            text = timeIn,
+                                            text = date,
                                             fontFamily = afacad,
-                                            color = Color.White
+                                            color = Color.White,
+                                            fontSize = 11.sp // Uniform font size
                                         )
                                         Text(
-                                            text = timeOut,
+                                            text = timeIn,
                                             fontFamily = afacad,
-                                            color = Color.White
+                                            color = Color.White,
+                                            fontSize = 11.sp // Uniform font size
+                                        )
+                                        Text(
+                                            text = if (timeOut == "--") {
+                                                " -- " // Leave empty or show something special
+                                            } else {
+                                                timeOut
+                                            },
+                                            fontFamily = afacad,
+                                            color = Color.White,
+                                            fontSize = 11.sp // Uniform font size
                                         )
                                     }
                                 }
@@ -684,11 +792,3 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 
 
 
-@Preview(showBackground = true)
-@Composable
-fun ProfileAnalyticsScreenPreview() {
-    JairosoftTimesheetTheme {
-        val navController = rememberNavController()
-        ProfileAnalyticsScreen(navController)
-    }
-}

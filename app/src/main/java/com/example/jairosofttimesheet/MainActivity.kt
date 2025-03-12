@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("AttendanceScreen") {
                         NavigationScreen(navController = navController) {
-                            AttendanceScreen(navController)
+                            AttendanceScreen()
                         }
                     }
                 }
