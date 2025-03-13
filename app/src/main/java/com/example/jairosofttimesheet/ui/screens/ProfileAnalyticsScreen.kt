@@ -45,7 +45,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.os.Looper
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.draw.clip
@@ -71,13 +78,20 @@ import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.SavedStateHandle
+import com.example.jairosofttimesheet.ui.theme.gradientAttendance
+import com.example.jairosofttimesheet.ui.theme.gradientDate
+import com.example.jairosofttimesheet.ui.theme.gradientOnGoing
+import com.example.jairosofttimesheet.ui.theme.gradientTrackedHours
 import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: AttendanceViewModel = viewModel(), profileViewModel: ProfileViewModel = viewModel()) {
-    val attendanceList by attendanceViewModel.attendanceList.collectAsState(initial = emptyList())
     val isClockedIn by attendanceViewModel.isClockedIn.collectAsState()
 
     var timeCounter by remember { mutableLongStateOf(0L) }
@@ -118,7 +132,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val locationRequest = LocationRequest.create().apply {
         priority = Priority.PRIORITY_HIGH_ACCURACY
-        interval = 5000 // Update every 5 seconds
+        interval = 5000
     }
 
     val locationCallback = rememberUpdatedState(
@@ -140,14 +154,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                 }
             }
         }
-    )
-
-    //animation states
-    var isLogoutClicked by remember { mutableStateOf(false) }
-    var isButtonClicked by remember { mutableStateOf(false) }
-    val buttonScale by animateFloatAsState(
-        if (isButtonClicked) 1.1f else 1f,
-        label = "ButtonScale"
     )
 
     //request location updates when permission is granted
@@ -175,28 +181,58 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
         runningTime % 60
     )
 
+
     // font
-    val afacad = FontFamily(
-        Font(R.font.afacad, FontWeight.Normal),
-    )
-    val afacadmedium = FontFamily(
-        Font(R.font.afacadmedium),
-    )
-    val montserratextrabold = FontFamily(
-        Font(R.font.montserratextrabold)
-    )
-    val inter = FontFamily(
-        Font(R.font.inter, FontWeight.Normal)
+    val afacad = FontFamily(Font(R.font.afacad, FontWeight.Normal),)
+    val afacadmedium = FontFamily(Font(R.font.afacadmedium),)
+    val montserratextrabold = FontFamily(Font(R.font.montserratextrabold))
+    val inter = FontFamily(Font(R.font.inter, FontWeight.Normal))
+    val poppins = FontFamily(Font(R.font.poppinsregular, FontWeight.Normal))
+    val poppinsextrabold = FontFamily(Font(R.font.poppinsextrabold, FontWeight.Normal))
+
+    //ANIMATIONS
+    // Animatable states
+    val alpha1 = remember { Animatable(0f) }
+    val scale1 = remember { Animatable(0.8f) }
+    val alpha2 = remember { Animatable(0f) }
+    val scale2 = remember { Animatable(0.8f) }
+    val alpha3 = remember { Animatable(0f) }
+    val scale3 = remember { Animatable(0.8f) }
+    val alpha4 = remember { Animatable(0f) }
+    val scale4 = remember { Animatable(0.8f) }
+
+    LaunchedEffect(Unit) {
+        delay(20)
+        launch {
+            alpha1.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            scale1.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+        }
+        delay(40)
+        launch {
+            alpha2.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            scale2.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+        }
+        delay(60)
+        launch {
+            alpha3.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            scale3.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+        }
+        delay(80)
+        launch {
+            alpha4.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            scale4.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+        }
+    }
+
+
+
+    var isButtonClicked by remember { mutableStateOf(false) }
+    val buttonScale by animateFloatAsState(
+        if (isButtonClicked) 1.1f else 1f,
+        label = "ButtonScale"
     )
 
-    val poppins = FontFamily(
-        Font(R.font.poppinsregular, FontWeight.Normal)
-    )
-
-    val poppinsextrabold = FontFamily(
-        Font(R.font.poppinsextrabold, FontWeight.Normal)
-    )
-
+    //START OF THE CODE SCREENS
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -249,7 +285,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                         modifier = Modifier
                             .size(120.dp, 35.dp)
                             .scale(buttonScale),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        colors = ButtonDefaults.buttonColors(
                             containerColor = if (isClockedIn) Color(0xFFDC3545) else Color(
                                 0xFF28A745
                             )
@@ -277,7 +313,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                     }
                 }
 
-                // Determine dialog content before showing the dialog
+                //determine dialog content before showing the dialog
                 val dialogTitle = if (isClockedIn) "Confirm Clock-Out" else "Confirm Clock-In"
                 val dialogText =
                     if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
@@ -289,7 +325,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                         confirmButton = {
                             TextButton(onClick = {
                                 showLocationDialog = false
-                                val day = getCurrentDay() // Ensure current day is correctly passed
+                                val day = getCurrentDay()
                                 if (profileViewModel.isClockedIn.value) {
                                     profileViewModel.clockOut(day)
                                     timeCounter = 0L
@@ -387,12 +423,12 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
 
             // Date Today
             Card(
-                modifier = Modifier.size(366.dp, 50.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFF203859
-                    )
-                )
+                modifier = Modifier
+                    .width(320.dp) // Reduced width
+                    .height(50.dp)
+                    .graphicsLayer(alpha = alpha1.value, scaleX = scale1.value, scaleY = scale1.value)
+                    .background(brush = gradientDate, shape = RoundedCornerShape(8.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -400,14 +436,15 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                 ) {
                     Text(
                         text = "Today is ${
-                            SimpleDateFormat(
-                                "MM/dd/yyyy, EEEE",
-                                Locale.getDefault()
-                            ).format(Date())
+                            SimpleDateFormat("MM/dd/yyyy, EEEE", Locale.getDefault()).format(Date())
                         }",
                         color = Color.White,
-                        fontSize = 24.sp,
-                        fontFamily = afacadmedium
+                        fontSize = 20.sp,
+                        fontFamily = afacadmedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -417,16 +454,14 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             // On Going Projects
             Card(
                 modifier = Modifier
-                    .size(366.dp, 63.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(
-                        0xFF89BAFA
-                    )
-                )
+                    .size(320.dp, 63.dp)
+                    .graphicsLayer(alpha = alpha2.value, scaleX = scale2.value, scaleY = scale2.value)
+                    .background(brush = gradientOnGoing, shape = RoundedCornerShape(8.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(366.dp, 63.dp)
+                        .size(320.dp, 63.dp)
                         .padding(start = 10.dp, top = 3.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -434,8 +469,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                         text = "On Going Projects:",
                         color = Color.Black,
                         fontFamily = afacad,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
+                        modifier = Modifier.align(Alignment.TopStart)
                     )
                     Text(
                         text = " _ _      _ _     _ _     _ _ ",
@@ -454,13 +488,11 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             // Tracked Hours
             Card(
                 modifier = Modifier
-                    .size(366.dp, 350.dp)
-                    .clickable {
-                        navController.navigate("TimesheetScreen")
-                    },
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFD9D9D9)
-                )
+                    .size(320.dp, 350.dp)
+                    .clickable { navController.navigate("TimesheetScreen") }
+                    .graphicsLayer(alpha = alpha3.value, scaleX = scale3.value, scaleY = scale3.value)
+                    .background(brush = gradientTrackedHours, shape = RoundedCornerShape(8.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
                 Box {
                     Row(
@@ -487,9 +519,8 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                     ) {
                         val hours = listOf(0, 2, 4, 6, 8)
                         val days = listOf("M", "T", "W", "Th", "F")
-                        val totalSeconds = 60f // 1 min to fully fill for testing
+                        val totalSeconds = 60f
 
-                        // Hour markers (0, 2, 4, 6, 8)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -502,8 +533,8 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                         Column {
                             days.forEach { day ->
                                 val workedSeconds = (trackedHours[day] ?: 0f) * totalSeconds
-                                val progressFraction = workedSeconds / totalSeconds // 0 to 1
-                                val barWidth = (progressFraction * 240f).dp // Full width = 240dp
+                                val progressFraction = workedSeconds / totalSeconds
+                                val barWidth = (progressFraction * 220f).dp
 
                                 Row(
                                     modifier = Modifier
@@ -511,7 +542,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                         .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Day label
                                     Text(
                                         text = day,
                                         fontFamily = afacad,
@@ -521,12 +551,11 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                         modifier = Modifier.width(24.dp)
                                     )
 
-                                    // Progress bar beside the current day
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(12.dp)
-                                            .background(Color.LightGray) // Background for clarity
+                                            .background(Color.LightGray)
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -551,10 +580,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            val workedHours = trackedHours[getCurrentDay()] ?: 0f
-                            val overtime = if (workedHours > 8) workedHours - 8 else 0f
-
-                            // Hours Worked
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = formattedWorkedHours,
@@ -570,7 +595,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 )
                             }
 
-                            // Overtime
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = formattedOvertime,
@@ -585,22 +609,20 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     color = Color.Black
                                 )
                             }
-
                         }
                     }
                 }
             }
-
 
             Spacer(modifier = Modifier.height(16.dp))
 
             //Attendance
             Card(
                 modifier = Modifier
-                    .size(366.dp, 337.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF203859)
-                )
+                    .size(320.dp, 337.dp)
+                    .graphicsLayer(alpha = alpha4.value, scaleX = scale4.value, scaleY = scale4.value),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     Row(
@@ -613,9 +635,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                         Image(
                             painter = painterResource(id = R.drawable.calendar),
                             contentDescription = "Calendar Icon",
-                            colorFilter = ColorFilter.tint(
-                                Color(0xFFFFFFFF)
-                            ),
+                            colorFilter = ColorFilter.tint(Color(0xFFFFFFFF)),
                             modifier = Modifier
                                 .size(24.dp)
                                 .padding(start = 4.dp)
@@ -630,21 +650,20 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 .background(Color(0xFF666666))
                                 .padding(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween // This will space items evenly
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = "Location",
                                 fontFamily = poppins,
                                 fontSize = 11.sp,
                                 color = Color.White,
-                                modifier = Modifier
-                                    .weight(1f) // Takes 1 fraction of the space
+                                modifier = Modifier.weight(1f)
                             )
 
                             Row(
                                 modifier = Modifier
                                     .clickable { showDatePicker = true }
-                                    .weight(1f), // Takes 1 fraction of the space
+                                    .weight(1f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -657,8 +676,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     imageVector = Icons.Default.ArrowDropDown,
                                     contentDescription = "Dropdown Arrow",
                                     tint = Color.White,
-                                    modifier = Modifier
-                                        .padding(start = 4.dp) // Adjust space between text and icon
+                                    modifier = Modifier.padding(start = 4.dp)
                                 )
                             }
 
@@ -700,30 +718,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             }
                         }
 
-                        val attendanceList =
-                            remember { mutableStateListOf<Triple<String, String, String>>() }
-
-                        LaunchedEffect(isClockedIn) {
-                            if (isClockedIn) {
-                                val date = SimpleDateFormat(
-                                    "MM/dd/yyyy",
-                                    Locale.getDefault()
-                                ).format(Date())
-                                val timeIn = SimpleDateFormat(
-                                    "hh:mm:ss a",
-                                    Locale.getDefault()
-                                ).format(Date())
-                                attendanceList.add(Triple(date, timeIn, "--"))
-                            } else if (attendanceList.isNotEmpty() && attendanceList.last().third == "--") {
-                                val timeOut = SimpleDateFormat(
-                                    "hh:mm:ss a",
-                                    Locale.getDefault()
-                                ).format(Date())
-                                val lastIndex = attendanceList.lastIndex
-                                attendanceList[lastIndex] =
-                                    attendanceList[lastIndex].copy(third = timeOut)
-                            }
-                        }
+                        val attendanceList by profileViewModel.attendanceList.collectAsState()
 
                         Column(
                             modifier = Modifier
@@ -737,9 +732,8 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                         .padding(horizontal = 8.dp)
                                         .height(IntrinsicSize.Min),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween // Ensures even spacing across Row items
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-
                                     Text(
                                         text = locationText.take(10) + if (locationText.length > 10) "..." else "",
                                         fontFamily = afacad,
@@ -783,7 +777,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                             .padding(start = 5.dp, end = 6.dp)
                                             .run {
                                                 if (timeOut == "--") {
-                                                    this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp)) // Adjust centering for "--"
+                                                    this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp))
                                                 } else {
                                                     this
                                                 }
@@ -796,14 +790,12 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                     }
 
                     FloatingActionButton(
-                        onClick = {
-                            navController.navigate("AttendanceScreen")
-                        },
+                        onClick = { navController.navigate("AttendanceScreen") },
                         containerColor = Color(0xFFFFFFFFF),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(16.dp)
-                            .size(332.dp, 41.dp)
+                            .size(320.dp, 41.dp)
                     ) {
                         Text(
                             text = "Show Attendance",
@@ -835,9 +827,32 @@ fun getCurrentDay(): String {
 fun ProfileAnalyticsScreenPreview() {
     JairosoftTimesheetTheme {
         val navController = rememberNavController()
-        ProfileAnalyticsScreen(navController)
+
+        // Provide fake ViewModel data instead of real ViewModels
+        val fakeAttendanceViewModel = remember {
+            object : AttendanceViewModel(SavedStateHandle()) {
+                override val isClockedIn = MutableStateFlow(false) // Fake data
+            }
+        }
+
+        val fakeProfileViewModel = remember {
+            object : ProfileViewModel() {
+                override val trackedHours = MutableStateFlow(mapOf("Monday" to 4f)) // Fake data
+                override val runningTime = MutableStateFlow(0L) // Fake running time
+            }
+        }
+
+        ProfileAnalyticsScreen(
+            navController = navController,
+            attendanceViewModel = fakeAttendanceViewModel,
+            profileViewModel = fakeProfileViewModel
+        )
     }
 }
+
+
+
+
 
 
 

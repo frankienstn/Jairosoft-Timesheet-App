@@ -8,13 +8,13 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.example.jairosofttimesheet.data.Attendance
 
-class AttendanceViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
+open class AttendanceViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _attendanceList = MutableStateFlow<List<Attendance>>(getSavedAttendanceData())
     val attendanceList: StateFlow<List<Attendance>> = _attendanceList
 
     private val _isClockedIn = MutableStateFlow(false)
-    val isClockedIn: StateFlow<Boolean> = _isClockedIn
+    open val isClockedIn: StateFlow<Boolean> = _isClockedIn
 
     // Add attendance and save
     fun addAttendance(location: String, date: String, timeIn: String) {

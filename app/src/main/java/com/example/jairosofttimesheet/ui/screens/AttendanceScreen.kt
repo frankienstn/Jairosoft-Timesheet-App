@@ -101,13 +101,7 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
         }
     }
 
-    Card(
-        modifier = Modifier
-            .width(669.dp)
-            .height(800.dp)
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF203859))
-    ) {
+
         Box(modifier = Modifier.fillMaxSize()) {
 
             Row(
@@ -288,7 +282,6 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
             }
         }
     }
-}
 
 @RequiresApi(Build.VERSION_CODES.Q)
 fun saveAttendanceToDownloads(attendanceList: List<Triple<String, String, String>>, context: Context) {
@@ -326,11 +319,6 @@ fun saveAttendanceToDownloads(attendanceList: List<Triple<String, String, String
 
 
 
-@Preview(showBackground = true)
-@Composable
-fun AttendanceScreenPreview() {
-    AttendanceScreen() // Let the default ViewModel factory handle it
-}
 
 
 

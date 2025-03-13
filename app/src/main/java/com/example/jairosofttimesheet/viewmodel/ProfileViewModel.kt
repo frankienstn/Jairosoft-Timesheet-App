@@ -7,16 +7,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
-class ProfileViewModel : ViewModel() {
+open class ProfileViewModel : ViewModel() {
     private val _trackedHours = MutableStateFlow<Map<String, Float>>(emptyMap())
-    val trackedHours: StateFlow<Map<String, Float>> = _trackedHours
+    open val trackedHours: StateFlow<Map<String, Float>> = _trackedHours
 
     private val _isClockedIn = MutableStateFlow(false)
     val isClockedIn: StateFlow<Boolean> = _isClockedIn
 
     private val _runningTime = MutableStateFlow(0L)
-    val runningTime: StateFlow<Long> = _runningTime
+    open val runningTime: StateFlow<Long> = _runningTime
+
+    private val _attendanceList = MutableStateFlow<List<Triple<String, String, String>>>(emptyList())
+    val attendanceList: StateFlow<List<Triple<String, String, String>>> = _attendanceList
 
     private var clockInTimes = mutableMapOf<String, Long>()
     private var job: Job? = null
@@ -26,6 +31,11 @@ class ProfileViewModel : ViewModel() {
             _isClockedIn.value = true
             clockInTimes[day] = System.currentTimeMillis()
             startTimer(day)
+
+            // Store clock-in data
+            val date = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).format(Date())
+            val timeIn = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
+            _attendanceList.value += Triple(date, timeIn, "--")
         }
     }
 
@@ -42,6 +52,16 @@ class ProfileViewModel : ViewModel() {
         _isClockedIn.value = false
         clockInTimes.remove(day)
         stopTimer()
+
+        // Update last record with time-out
+        val timeOut = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
+        _attendanceList.value = _attendanceList.value.mapIndexed { index, record ->
+            if (index == _attendanceList.value.lastIndex && record.third == "--") {
+                record.copy(third = timeOut)
+            } else {
+                record
+            }
+        }
     }
 
     private fun startTimer(day: String) {
@@ -50,7 +70,6 @@ class ProfileViewModel : ViewModel() {
             while (_isClockedIn.value) {
                 val elapsedMillis = System.currentTimeMillis() - (clockInTimes[day] ?: 0L)
                 _runningTime.value = elapsedMillis / 1000
-
 
                 val elapsedHours = elapsedMillis / (1000 * 60 * 60).toFloat()
                 _trackedHours.value = _trackedHours.value.toMutableMap().apply {
