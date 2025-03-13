@@ -1,5 +1,6 @@
 package com.example.jairosofttimesheet.ui.screens
 
+import android.content.ContentValues
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,7 +27,18 @@ import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.Context
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.compose.ui.platform.LocalContext
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
@@ -39,6 +51,9 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
 
     // Collect state from ViewModel
     val isClockedIn by viewModel.isClockedIn.collectAsState()
+
+    //for download context
+    val context = LocalContext.current
 
     // Fake attendance list with placeholder data
     val fakeAttendanceList = remember {
@@ -94,7 +109,7 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFF203859))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Header Row
+
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -102,13 +117,27 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Attendance", fontFamily = afacad, color = Color.White)
+
                 Image(
                     painter = painterResource(id = R.drawable.calendar),
                     contentDescription = "Calendar Icon",
-                    colorFilter = ColorFilter.tint(Color(0xFFFFFFFF)),
+                    colorFilter = ColorFilter.tint(Color.White),
                     modifier = Modifier
                         .size(24.dp)
                         .padding(start = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Image(
+                    painter = painterResource(id = R.drawable.download),
+                    contentDescription = "Download Attendance",
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable {
+                            saveAttendanceToDownloads(fakeAttendanceList, context)
+                        }
                 )
             }
 
@@ -260,3 +289,48 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
         }
     }
 }
+
+@RequiresApi(Build.VERSION_CODES.Q)
+fun saveAttendanceToDownloads(attendanceList: List<Triple<String, String, String>>, context: Context) {
+    val fileName = "Attendance_${System.currentTimeMillis()}.txt"
+    val fileContents = buildString {
+        append("Attendance Record\n\n")
+        append("Date\t\tTime In\t\tTime Out\n")
+        append("=================================\n")
+        attendanceList.forEach { (date, timeIn, timeOut) ->
+            append("$date\t$timeIn\t$timeOut\n")
+        }
+    }
+
+    try {
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
+
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+        uri?.let {
+            resolver.openOutputStream(it)?.use { outputStream: OutputStream ->
+                outputStream.write(fileContents.toByteArray())
+            }
+            Toast.makeText(context, "File saved to Downloads", Toast.LENGTH_LONG).show()
+        } ?: Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Error saving file", Toast.LENGTH_LONG).show()
+    }
+}
+
+
+
+@Preview(showBackground = true)
+@Composable
+fun AttendanceScreenPreview() {
+    AttendanceScreen() // Let the default ViewModel factory handle it
+}
+
+
+

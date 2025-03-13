@@ -71,19 +71,33 @@ import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import androidx.compose.runtime.collectAsState
+import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceViewModel = viewModel()) {
-    // used by attendanceviewmodel to get data
-    val attendanceList by viewModel.attendanceList.collectAsState(initial = emptyList())
-    val isClockedIn by viewModel.isClockedIn.collectAsState()
+fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: AttendanceViewModel = viewModel(), profileViewModel: ProfileViewModel = viewModel()) {
+    val attendanceList by attendanceViewModel.attendanceList.collectAsState(initial = emptyList())
+    val isClockedIn by attendanceViewModel.isClockedIn.collectAsState()
 
     var timeCounter by remember { mutableLongStateOf(0L) }
-    val userName by remember { mutableStateOf("User") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-    val trackedHours by remember { mutableIntStateOf(0) }
+
+    // Updated for tracked hours
+    val trackedHours by profileViewModel.trackedHours.collectAsState()
+    val currentDay = getCurrentDay()
+    val workedHours = trackedHours[getCurrentDay()] ?: 0f
+    val totalMinutes = (workedHours * 60).toInt()
+    val hoursPart = totalMinutes / 60
+    val minutesPart = totalMinutes % 60
+    val formattedWorkedHours = "${hoursPart}h and ${"%02d".format(minutesPart)}m"
+    val overtime = if (workedHours > 8) workedHours - 8 else 0f
+    val totalOvertimeMinutes = (overtime * 60).toInt()
+    val overtimeHoursPart = totalOvertimeMinutes / 60
+    val overtimeMinutesPart = totalOvertimeMinutes % 60
+    val formattedOvertime = "${overtimeHoursPart}h and ${"%02d".format(overtimeMinutesPart)}m"
+
 
     // location state
     var showLocationDialog by remember { mutableStateOf(false) }
@@ -152,11 +166,13 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
         }
     }
 
-    var formattedTime = String.format(
+    val runningTime by profileViewModel.runningTime.collectAsState()
+
+    val formattedTime = String.format(
         "%02d:%02d:%02d",
-        TimeUnit.SECONDS.toHours(timeCounter),
-        TimeUnit.SECONDS.toMinutes(timeCounter) % 60,
-        timeCounter % 60
+        runningTime / 3600,
+        (runningTime % 3600) / 60,
+        runningTime % 60
     )
 
     // font
@@ -218,15 +234,13 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
+                    val isClockedIn by profileViewModel.isClockedIn.collectAsState()
+
                     Button(
                         onClick = {
-                            if (isClockedIn) {
-                                showLocationDialog = true
-                                isButtonClicked = true
-                            } else {
-                                showLocationDialog = true
-                                isButtonClicked = true
-                            }
+                            showLocationDialog = true
+                            isButtonClicked = true
+
                             coroutineScope.launch {
                                 delay(300)
                                 isButtonClicked = false
@@ -275,11 +289,12 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                         confirmButton = {
                             TextButton(onClick = {
                                 showLocationDialog = false
-                                if (isClockedIn) {
-                                    viewModel.toggleClockIn()
+                                val day = getCurrentDay() // Ensure current day is correctly passed
+                                if (profileViewModel.isClockedIn.value) {
+                                    profileViewModel.clockOut(day)
                                     timeCounter = 0L
                                 } else {
-                                    viewModel.toggleClockIn()
+                                    profileViewModel.clockIn(day)
                                 }
                             }) {
                                 Text("Yes")
@@ -436,10 +451,10 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            //Tracked Hours
+            // Tracked Hours
             Card(
                 modifier = Modifier
-                    .size(366.dp, 280.dp)
+                    .size(366.dp, 350.dp)
                     .clickable {
                         navController.navigate("TimesheetScreen")
                     },
@@ -454,19 +469,11 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                             .padding(start = 10.dp, top = 3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Tracked Hours",
-                            fontFamily = afacad,
-                            color = Color.Black
-                        )
+                        Text(text = "Tracked Hours", fontFamily = afacad, color = Color.Black)
                         Image(
                             painter = painterResource(id = R.drawable.clock),
                             contentDescription = "Clock Icon",
-                            colorFilter = ColorFilter.tint(
-                                Color(
-                                    0xFF10161F
-                                )
-                            ),
+                            colorFilter = ColorFilter.tint(Color(0xFF10161F)),
                             modifier = Modifier
                                 .size(24.dp)
                                 .padding(start = 4.dp)
@@ -480,51 +487,53 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                     ) {
                         val hours = listOf(0, 2, 4, 6, 8)
                         val days = listOf("M", "T", "W", "Th", "F")
+                        val totalSeconds = 60f // 1 min to fully fill for testing
+
+                        // Hour markers (0, 2, 4, 6, 8)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            hours.forEach { hour ->
+                                Text(text = "$hour", fontFamily = afacad, fontSize = 11.sp, color = Color.Black)
+                            }
+                        }
 
                         Column {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                hours.forEach { hour ->
+                            days.forEach { day ->
+                                val workedSeconds = (trackedHours[day] ?: 0f) * totalSeconds
+                                val progressFraction = workedSeconds / totalSeconds // 0 to 1
+                                val barWidth = (progressFraction * 240f).dp // Full width = 240dp
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Day label
                                     Text(
-                                        text = "$hour",
+                                        text = day,
                                         fontFamily = afacad,
                                         fontSize = 11.sp,
-                                        color = Color.Black
+                                        color = if (day == currentDay) Color.Red else Color.Black,
+                                        fontWeight = if (day == currentDay) FontWeight.Bold else FontWeight.Normal,
+                                        modifier = Modifier.width(24.dp)
                                     )
-                                }
-                            }
 
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp, 110.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxHeight(),
-                                    verticalArrangement = Arrangement.SpaceEvenly,
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    days.forEach { day ->
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .width(24.dp)
-                                                    .height((trackedHours * 30).dp)
-                                                    .background(Color.Blue)
-                                            )
-                                            Text(
-                                                text = day,
-                                                fontFamily = afacad,
-                                                fontSize = 11.sp,
-                                                color = Color.Black
-                                            )
-                                        }
+                                    // Progress bar beside the current day
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(12.dp)
+                                            .background(Color.LightGray) // Background for clarity
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(if (day == currentDay) barWidth else 0.dp)
+                                                .fillMaxHeight()
+                                                .background(Color.Blue)
+                                        )
                                     }
                                 }
                             }
@@ -539,18 +548,16 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                         )
 
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
+                            val workedHours = trackedHours[getCurrentDay()] ?: 0f
+                            val overtime = if (workedHours > 8) workedHours - 8 else 0f
 
-                            //change this so that when the user clicks the Clock In button it will register as bars for Hours Worked
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
+                            // Hours Worked
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "00h and 00m",
+                                    text = formattedWorkedHours,  // Displays properly formatted time
                                     fontFamily = poppinsextrabold,
                                     fontSize = 11.sp,
                                     color = Color.Black
@@ -563,13 +570,10 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                 )
                             }
 
-                            //change this so that when the user clicks the Clock In button it will register as bars for Overtime
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
+                            // Overtime
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "00h and 00m",
+                                    text = formattedOvertime,  // Displays properly formatted overtime
                                     fontFamily = poppinsextrabold,
                                     fontSize = 11.sp,
                                     color = Color.Black
@@ -581,10 +585,13 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                     color = Color.Black
                                 )
                             }
+
                         }
                     }
                 }
             }
+
+
             Spacer(modifier = Modifier.height(16.dp))
 
             //Attendance
@@ -738,7 +745,7 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier
-                                            .weight(1f) // Adjusted for balance
+                                            .weight(1f)
                                             .padding(end = 5.dp),
                                         fontSize = 11.sp
                                     )
@@ -748,7 +755,7 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier
-                                            .weight(1f) // Adjusted for balance
+                                            .weight(1f)
                                             .padding(end = 5.dp),
                                         fontSize = 11.sp
                                     )
@@ -758,8 +765,8 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier
-                                            .weight(1f) // Adjusted for balance
-                                            .padding(end = 5.dp), // Adjust padding for even spacing
+                                            .weight(1f)
+                                            .padding(end = 5.dp),
                                         fontSize = 11.sp
                                     )
 
@@ -772,10 +779,9 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier
-                                            .weight(1f) // Adjusted for balance
+                                            .weight(1f)
                                             .padding(start = 5.dp, end = 6.dp)
                                             .run {
-                                                // Apply center alignment only when the text is "--"
                                                 if (timeOut == "--") {
                                                     this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp)) // Adjust centering for "--"
                                                 } else {
@@ -809,6 +815,18 @@ fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceVi
                 }
             }
         }
+    }
+}
+
+fun getCurrentDay(): String {
+    val calendar = Calendar.getInstance()
+    return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+        Calendar.MONDAY -> "M"
+        Calendar.TUESDAY -> "T"
+        Calendar.WEDNESDAY -> "W"
+        Calendar.THURSDAY -> "Th"
+        Calendar.FRIDAY -> "F"
+        else -> ""
     }
 }
 
