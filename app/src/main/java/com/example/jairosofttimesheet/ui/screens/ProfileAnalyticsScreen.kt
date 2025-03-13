@@ -67,100 +67,99 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
+import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun ProfileAnalyticsScreen(navController: NavController) {
+fun ProfileAnalyticsScreen(navController: NavController, viewModel: AttendanceViewModel = viewModel()) {
+    // used by attendanceviewmodel to get data
+    val attendanceList by viewModel.attendanceList.collectAsState(initial = emptyList())
+    val isClockedIn by viewModel.isClockedIn.collectAsState()
 
-    var isClockedIn by remember { mutableStateOf(false) }
     var timeCounter by remember { mutableLongStateOf(0L) }
     val userName by remember { mutableStateOf("User") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-
-    //location
-    var showLocationDialog by remember { mutableStateOf(false) }
-
-    // animation states
-    var isLogoutClicked by remember { mutableStateOf(false) }
-    var isButtonClicked by remember { mutableStateOf(false) }
-
     val trackedHours by remember { mutableIntStateOf(0) }
 
-    val logoutScale by animateFloatAsState(
-        if (isLogoutClicked) 1.1f else 1f,
-        label = "LogoutScale"
+    // location state
+    var showLocationDialog by remember { mutableStateOf(false) }
+    var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+    var locationText by remember { mutableStateOf("Fetching location...") }
+
+    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    // Request permissions if not granted
+    LaunchedEffect(Unit) {
+        if (permissionState.status != PermissionStatus.Granted) {
+            permissionState.launchPermissionRequest()
+        }
+    }
+
+    // Location permission granted, request location updates
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val locationRequest = LocationRequest.create().apply {
+        priority = Priority.PRIORITY_HIGH_ACCURACY
+        interval = 5000 // Update every 5 seconds
+    }
+
+    val locationCallback = rememberUpdatedState(
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation?.let { location ->
+                    userLocation = LatLng(location.latitude, location.longitude)
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    try {
+                        val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                        if (addressList.isNullOrEmpty()) {
+                            locationText = "Unable to get location name"
+                        } else {
+                            locationText = addressList[0].locality ?: addressList[0].subAdminArea ?: "Unknown Location"
+                        }
+                    } catch (e: IOException) {
+                        locationText = "Unable to get location name"
+                    }
+                }
+            }
+        }
     )
+
+    //animation states
+    var isLogoutClicked by remember { mutableStateOf(false) }
+    var isButtonClicked by remember { mutableStateOf(false) }
     val buttonScale by animateFloatAsState(
         if (isButtonClicked) 1.1f else 1f,
         label = "ButtonScale"
     )
 
-    // Location permissions
-    val context = LocalContext.current
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
-
-    // Request permissions if not granted
-    if (permissionState.status != PermissionStatus.Granted) {
-        LaunchedEffect(Unit) {
-            permissionState.launchPermissionRequest()
-        }
-    }
-
-    // Location request and callback
-    val locationRequest = LocationRequest.create().apply {
-        priority = Priority.PRIORITY_HIGH_ACCURACY
-        interval = 5000
-    }
-
-    var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
-    var locationText by remember { mutableStateOf("Fetching location...") } // Separate text variable
-
-    val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-                userLocation = LatLng(location.latitude, location.longitude)
-                val geocoder = Geocoder(context, Locale.getDefault())
-                try {
-                    val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                    if (!addressList.isNullOrEmpty()) {
-                        val address = addressList[0]
-                        locationText = address.locality ?: address.subAdminArea ?: "Unknown Location"
-                    }
-                } catch (e: IOException) {
-                    locationText = "Unable to get location name"
-                }
-            }
-        }
-    }
-
+    //request location updates when permission is granted
     LaunchedEffect(permissionState.status) {
         if (permissionState.status == PermissionStatus.Granted) {
             fusedLocationClient.requestLocationUpdates(
-                locationRequest, locationCallback, Looper.getMainLooper()
+                locationRequest, locationCallback.value, Looper.getMainLooper()
             )
-        } else {
-            locationText = "Permission denied"
         }
     }
 
-
-
-    LaunchedEffect(permissionState.status) {
-        if (permissionState.status == PermissionStatus.Granted) {
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest, locationCallback, Looper.getMainLooper()
-            )
-        } else {
-            locationText = "Permission denied"
+    LaunchedEffect(isClockedIn) {
+        while (isClockedIn) {
+            delay(1000)
+            timeCounter++
         }
     }
 
-    //font
+    var formattedTime = String.format(
+        "%02d:%02d:%02d",
+        TimeUnit.SECONDS.toHours(timeCounter),
+        TimeUnit.SECONDS.toMinutes(timeCounter) % 60,
+        timeCounter % 60
+    )
+
+    // font
     val afacad = FontFamily(
         Font(R.font.afacad, FontWeight.Normal),
     )
@@ -180,20 +179,6 @@ fun ProfileAnalyticsScreen(navController: NavController) {
 
     val poppinsextrabold = FontFamily(
         Font(R.font.poppinsextrabold, FontWeight.Normal)
-    )
-
-    LaunchedEffect(isClockedIn) {
-        while (isClockedIn) {
-            delay(1000)
-            timeCounter++
-        }
-    }
-
-    var formattedTime = String.format(
-        "%02d:%02d:%02d",
-        TimeUnit.SECONDS.toHours(timeCounter),
-        TimeUnit.SECONDS.toMinutes(timeCounter) % 60,
-        timeCounter % 60
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -283,6 +268,7 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                 val dialogText =
                     if (isClockedIn) "Are you sure you want to clock out?" else "Your location has been detected. Do you want to proceed with clocking in?"
 
+                //location dialog
                 if (showLocationDialog) {
                     AlertDialog(
                         onDismissRequest = { showLocationDialog = false },
@@ -290,10 +276,10 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                             TextButton(onClick = {
                                 showLocationDialog = false
                                 if (isClockedIn) {
-                                    isClockedIn = false
+                                    viewModel.toggleClockIn()
                                     timeCounter = 0L
                                 } else {
-                                    isClockedIn = true
+                                    viewModel.toggleClockIn()
                                 }
                             }) {
                                 Text("Yes")
@@ -636,23 +622,38 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .background(Color(0xFF666666))
                                 .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween // This will space items evenly
                         ) {
                             Text(
-                                text = "Date",
+                                text = "Location",
                                 fontFamily = poppins,
                                 fontSize = 11.sp,
                                 color = Color.White,
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(1f) // Takes 1 fraction of the space
+                            )
+
+                            Row(
+                                modifier = Modifier
                                     .clickable { showDatePicker = true }
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Dropdown Arrow",
-                                tint = Color.White,
-                                modifier = Modifier.clickable { showDatePicker = true }
-                            )
+                                    .weight(1f), // Takes 1 fraction of the space
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Date",
+                                    fontFamily = poppins,
+                                    fontSize = 11.sp,
+                                    color = Color.White
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Dropdown Arrow",
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .padding(start = 4.dp) // Adjust space between text and icon
+                                )
+                            }
 
                             if (showDatePicker) {
                                 DatePickerDialog(
@@ -686,7 +687,8 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                                     text = "Time Out",
                                     fontFamily = poppins,
                                     fontSize = 11.sp,
-                                    color = Color.White
+                                    color = Color.White,
+                                    modifier = Modifier.padding(end = 15.dp)
                                 )
                             }
                         }
@@ -717,51 +719,71 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                         }
 
                         Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState())
+                            modifier = Modifier
+                                .verticalScroll(rememberScrollState())
                                 .weight(1f)
                         ) {
                             attendanceList.forEach { (date, timeIn, timeOut) ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(horizontal = 8.dp)
+                                        .height(IntrinsicSize.Min),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween // Ensures even spacing across Row items
                                 ) {
-                                    // Location at the start of the row with 10 character limit
+
                                     Text(
                                         text = locationText.take(10) + if (locationText.length > 10) "..." else "",
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier.weight(1f),
-                                        fontSize = 11.sp // Uniform font size
+                                        modifier = Modifier
+                                            .weight(1f) // Adjusted for balance
+                                            .padding(end = 5.dp),
+                                        fontSize = 11.sp
                                     )
-                                    Row(
-                                        modifier = Modifier.weight(2f),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(
-                                            text = date,
-                                            fontFamily = afacad,
-                                            color = Color.White,
-                                            fontSize = 11.sp // Uniform font size
-                                        )
-                                        Text(
-                                            text = timeIn,
-                                            fontFamily = afacad,
-                                            color = Color.White,
-                                            fontSize = 11.sp // Uniform font size
-                                        )
-                                        Text(
-                                            text = if (timeOut == "--") {
-                                                " -- " // Leave empty or show something special
-                                            } else {
-                                                timeOut
+
+                                    Text(
+                                        text = date,
+                                        fontFamily = afacad,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .weight(1f) // Adjusted for balance
+                                            .padding(end = 5.dp),
+                                        fontSize = 11.sp
+                                    )
+
+                                    Text(
+                                        text = timeIn,
+                                        fontFamily = afacad,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .weight(1f) // Adjusted for balance
+                                            .padding(end = 5.dp), // Adjust padding for even spacing
+                                        fontSize = 11.sp
+                                    )
+
+                                    Text(
+                                        text = if (timeOut == "--") {
+                                            " -- "
+                                        } else {
+                                            timeOut
+                                        },
+                                        fontFamily = afacad,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .weight(1f) // Adjusted for balance
+                                            .padding(start = 5.dp, end = 6.dp)
+                                            .run {
+                                                // Apply center alignment only when the text is "--"
+                                                if (timeOut == "--") {
+                                                    this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp)) // Adjust centering for "--"
+                                                } else {
+                                                    this
+                                                }
                                             },
-                                            fontFamily = afacad,
-                                            color = Color.White,
-                                            fontSize = 11.sp // Uniform font size
-                                        )
-                                    }
+                                        fontSize = 11.sp
+                                    )
                                 }
                             }
                         }
@@ -787,6 +809,15 @@ fun ProfileAnalyticsScreen(navController: NavController) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileAnalyticsScreenPreview() {
+    JairosoftTimesheetTheme {
+        val navController = rememberNavController()
+        ProfileAnalyticsScreen(navController)
     }
 }
 
