@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.jairosofttimesheet.R
+import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 
 @Composable
 fun TimesheetScreen(navController: NavController) {
@@ -48,9 +49,10 @@ fun TimesheetScreen(navController: NavController) {
     )
 
     Column(modifier = Modifier
-        .fillMaxSize() // Makes the column take up the full available screen space
-        .padding(16.dp)) {
-
+        .fillMaxSize()
+        .background(gradientDBlue)
+        .padding(16.dp))
+        {
         // Header Text
         Text(text = "Timesheet", fontFamily = poppins, fontSize = 20.sp, color = Color(color = 0xFFFFFFFF))
 

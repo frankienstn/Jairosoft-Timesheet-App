@@ -34,6 +34,7 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.LocalContext
+import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -102,7 +103,7 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
     }
 
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().background(gradientDBlue)) {
 
             Row(
                 modifier = Modifier

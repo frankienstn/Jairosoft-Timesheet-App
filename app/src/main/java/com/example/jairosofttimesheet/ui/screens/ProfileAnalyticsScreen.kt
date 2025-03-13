@@ -204,27 +204,25 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     LaunchedEffect(Unit) {
         delay(20)
         launch {
-            alpha1.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            alpha1.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
             scale1.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
         }
         delay(40)
         launch {
-            alpha2.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            alpha2.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
             scale2.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
         }
         delay(60)
         launch {
-            alpha3.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            alpha3.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
             scale3.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
         }
         delay(80)
         launch {
-            alpha4.animateTo(1f, animationSpec = tween(150, easing = FastOutSlowInEasing))
+            alpha4.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
             scale4.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
         }
     }
-
-
 
     var isButtonClicked by remember { mutableStateOf(false) }
     val buttonScale by animateFloatAsState(
