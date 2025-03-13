@@ -557,7 +557,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             // Hours Worked
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = formattedWorkedHours,  // Displays properly formatted time
+                                    text = formattedWorkedHours,
                                     fontFamily = poppinsextrabold,
                                     fontSize = 11.sp,
                                     color = Color.Black
@@ -573,7 +573,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             // Overtime
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = formattedOvertime,  // Displays properly formatted overtime
+                                    text = formattedOvertime,
                                     fontFamily = poppinsextrabold,
                                     fontSize = 11.sp,
                                     color = Color.Black

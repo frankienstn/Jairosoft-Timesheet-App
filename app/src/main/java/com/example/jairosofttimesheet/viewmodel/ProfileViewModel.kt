@@ -15,16 +15,16 @@ class ProfileViewModel : ViewModel() {
     private val _isClockedIn = MutableStateFlow(false)
     val isClockedIn: StateFlow<Boolean> = _isClockedIn
 
-    private val _runningTime = MutableStateFlow(0L) // Tracks running seconds
+    private val _runningTime = MutableStateFlow(0L)
     val runningTime: StateFlow<Long> = _runningTime
 
-    private var clockInTimes = mutableMapOf<String, Long>() // Store clock-in time per day
+    private var clockInTimes = mutableMapOf<String, Long>()
     private var job: Job? = null
 
     fun clockIn(day: String) {
         if (!_isClockedIn.value) {
             _isClockedIn.value = true
-            clockInTimes[day] = System.currentTimeMillis() // Store clock-in time for the specific day
+            clockInTimes[day] = System.currentTimeMillis()
             startTimer(day)
         }
     }
@@ -40,7 +40,7 @@ class ProfileViewModel : ViewModel() {
         }
 
         _isClockedIn.value = false
-        clockInTimes.remove(day) // Clear clock-in time for the day
+        clockInTimes.remove(day)
         stopTimer()
     }
 
@@ -51,7 +51,7 @@ class ProfileViewModel : ViewModel() {
                 val elapsedMillis = System.currentTimeMillis() - (clockInTimes[day] ?: 0L)
                 _runningTime.value = elapsedMillis / 1000
 
-                // Update tracked hours in real-time
+
                 val elapsedHours = elapsedMillis / (1000 * 60 * 60).toFloat()
                 _trackedHours.value = _trackedHours.value.toMutableMap().apply {
                     this[day] = elapsedHours
