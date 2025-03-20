@@ -1,7 +1,9 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose") // ✅ Required for Kotlin 2.0 & Jetpack Compose
+    id("kotlin-kapt") // ✅ Required for Hilt & Room
+    id("dagger.hilt.android.plugin") // ✅ Correct Hilt Plugin
 }
 
 android {
@@ -27,49 +29,59 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17  // ✅ Match latest JDK version
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"  // ✅ Matches latest Java compatibility
     }
+
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
+    // ✅ Jetpack Compose Dependencies
+    implementation(platform("androidx.compose:compose-bom:2024.03.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui-tooling.preview")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose")
 
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // ✅ Required for Kotlin 2.0
+    implementation("androidx.compose.compiler:compiler:2.0.0")
 
-    implementation(libs.androidx.lifecycle.runtime.compose)
+    // ✅ Hilt Dependency Injection
+    implementation("com.google.dagger:hilt-android:2.50")
+    kapt("com.google.dagger:hilt-android-compiler:2.50")
 
-    // Location dependencies
-    implementation("com.google.maps.android:maps-compose:2.11.4")
+    // ✅ Location Services & Maps
     implementation("com.google.android.gms:play-services-location:21.0.1")
-
+    implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.accompanist:accompanist-permissions:0.30.1")
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.runtime.ktx)
-    implementation(libs.androidx.navigation.runtime.android)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.play.services.location)
-    implementation(libs.play.services.maps)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    // ✅ AndroidX & Navigation
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+
+    // ✅ Retrofit & OkHttp (API Calls)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.10.0") // ✅ Debug API Calls
+
+    // ✅ Testing Dependencies
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

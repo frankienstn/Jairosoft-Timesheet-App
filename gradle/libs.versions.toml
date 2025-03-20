@@ -23,6 +23,7 @@ navigationCompose = "2.8.7"
 constraintlayout = "2.2.1"
 playServicesLocation = "21.3.0"
 playServicesMaps = "19.1.0"
+transportRuntime = "4.0.0"
 
 [libraries]
 accompanist-permissions-v0270 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "googleAccompanistPermissions" }
@@ -57,6 +58,7 @@ maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = 
 maps-utils-ktx = { module = "com.google.maps.android:maps-utils-ktx", version.ref = "mapsUtilsKtx" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
+transport-runtime = { group = "com.google.android.datatransport", name = "transport-runtime", version.ref = "transportRuntime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
