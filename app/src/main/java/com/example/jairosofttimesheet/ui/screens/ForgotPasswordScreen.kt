@@ -41,7 +41,7 @@ fun ForgotPasswordScreen(navController: NavController) {
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(32.dp)
-                    .clickable { navController.popBackStack() }, // Navigate back when clicked
+                    .clickable {navController.popBackStack() }, // Navigate back when clicked
                 tint = (Color(0XFFFFFFFF))
             )
         }

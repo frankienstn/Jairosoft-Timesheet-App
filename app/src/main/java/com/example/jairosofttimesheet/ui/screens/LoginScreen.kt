@@ -49,7 +49,6 @@ fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") } // Email state
     var password by remember { mutableStateOf("") } // Password state
     var rememberMeChecked by remember { mutableStateOf(false) } // Checkbox state
-    var visible by remember { mutableStateOf(false) }
 
     // font
     val afacad = FontFamily(
@@ -59,16 +58,6 @@ fun LoginScreen(navController: NavController) {
     val afacadExtraBold = FontFamily(
         Font(R.font.afacad, FontWeight.ExtraBold)
     )
-
-
-    LaunchedEffect(Unit) {
-        visible = true
-    }
-
-    AnimatedVisibility(
-        visible = visible,
-        enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500))
-    ) {
 
         Column(
             modifier = Modifier
@@ -81,7 +70,7 @@ fun LoginScreen(navController: NavController) {
 
             // Logo
             Image(
-                painter = painterResource(id = R.drawable.timesheetapplogopng), // Replace with actual image
+                painter = painterResource(id = R.drawable.timesheetapplogopng),
                 contentDescription = "Jairosoft Logo",
                 modifier = Modifier
                     .size(188.dp)
@@ -175,9 +164,7 @@ fun LoginScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(150.dp))
-
         }
-    }
 }
 
 

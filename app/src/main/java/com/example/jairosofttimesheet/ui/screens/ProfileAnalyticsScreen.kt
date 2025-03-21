@@ -112,7 +112,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     val overtimeMinutesPart = totalOvertimeMinutes % 60
     val formattedOvertime = "${overtimeHoursPart}h and ${"%02d".format(overtimeMinutesPart)}m"
 
-
     // location state
     var showLocationDialog by remember { mutableStateOf(false) }
     var userLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
@@ -268,7 +267,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    val isClockedIn by profileViewModel.isClockedIn.collectAsState()
+                   val isClockedIn by profileViewModel.isClockedIn.collectAsState()
 
                     Button(
                         onClick = {

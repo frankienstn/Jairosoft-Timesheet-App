@@ -41,16 +41,14 @@ android {
 
 dependencies {
 
+    implementation (libs.google.accompanist.navigation.animation)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-
     implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Location dependencies
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-location:21.0.1")
-
-    implementation("com.google.accompanist:accompanist-permissions:0.30.1")
-
+    implementation(libs.accompanist.permissions.v0301)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -65,6 +63,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)
+    implementation(libs.androidx.navigation.common.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
