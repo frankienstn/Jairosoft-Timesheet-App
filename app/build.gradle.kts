@@ -41,11 +41,15 @@ android {
 
 dependencies {
 
+    //API
+    implementation(libs.retrofit)
+    implementation(libs.converterMoshi)
+    implementation(libs.moshi.kotlin)
+
     implementation (libs.google.accompanist.navigation.animation)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    // Location dependencies
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation(libs.accompanist.permissions.v0301)
@@ -64,6 +68,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)
     implementation(libs.androidx.navigation.common.ktx)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
