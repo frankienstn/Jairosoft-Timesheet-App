@@ -14,7 +14,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -40,13 +39,11 @@ android {
 }
 
 dependencies {
-
-    //API
     implementation(libs.retrofit)
     implementation(libs.converterMoshi)
     implementation(libs.moshi.kotlin)
 
-    implementation (libs.google.accompanist.navigation.animation)
+    implementation(libs.google.accompanist.navigation.animation)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
@@ -77,3 +74,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
