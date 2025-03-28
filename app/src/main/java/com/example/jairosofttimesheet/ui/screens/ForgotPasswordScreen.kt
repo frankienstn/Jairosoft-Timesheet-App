@@ -1,5 +1,6 @@
 package com.example.jairosofttimesheet.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,10 +19,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.jairosofttimesheet.R
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ForgotPasswordScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
 
     Column(
         modifier = Modifier
@@ -30,7 +34,6 @@ fun ForgotPasswordScreen(navController: NavController) {
             .padding(horizontal = 32.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Back Button (Top Left)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -41,18 +44,17 @@ fun ForgotPasswordScreen(navController: NavController) {
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(32.dp)
-                    .clickable {navController.popBackStack() }, // Navigate back when clicked
-                tint = (Color(0XFFFFFFFF))
+                    .clickable { navController.popBackStack() },
+                tint = Color.White
             )
         }
 
         Spacer(modifier = Modifier.height(200.dp))
 
-        // Title
         Text(
             text = "Forgot password?",
             fontSize = 24.sp,
-            color = Color(0xFFFFFFFF),
+            color = Color.White,
             modifier = Modifier.align(Alignment.Start)
         )
 
@@ -61,13 +63,12 @@ fun ForgotPasswordScreen(navController: NavController) {
         Text(
             text = "Enter your email to receive a confirmation email",
             fontSize = 14.sp,
-            color = Color(0xFFFFFFFF),
+            color = Color.White,
             modifier = Modifier.align(Alignment.Start)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Email Input Field
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -82,18 +83,19 @@ fun ForgotPasswordScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Send Password Reset Email Button
+
         Button(
-            onClick = { /* Handle password reset */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+            onClick = {
+                Toast.makeText(context, "Email sent!", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text(text = "Send password reset email", fontSize = 16.sp)
+            Text(text = "Send password reset email")
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
