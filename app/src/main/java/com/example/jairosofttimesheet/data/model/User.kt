@@ -18,9 +18,30 @@ data class LoginResponseData(
     val expires: Int
 )
 
-data class Attendance(
-    val location: String,
-    val date: String,
-    val timeIn: String,
-    val timeOut: String
+data class AttendanceResponse(
+    val status: String,
+    val response: AttendanceLogs
 )
+
+data class AttendanceLogs(
+    val Logs: List<AttendanceLog>
+)
+
+data class AttendanceLog(
+    val toggle: String?,
+    @Json(name = "Total Hours 100%") val totalHours: Int?,
+    @Json(name = "Created By") val createdBy: String?,
+    val _id: String?,
+    val User_id: String?,
+    val timeOut: Long?,
+    val date: Long?,
+    val attendanceStatus: String?,
+    val createdDate: Long?,
+    val modifiedDate: Long?,
+    val timeIn: Long?
+)
+
+
+
+
+

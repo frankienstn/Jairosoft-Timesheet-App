@@ -5,8 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
@@ -19,7 +17,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.jairosofttimesheet.R
@@ -33,73 +30,47 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.createSavedStateHandle
+import com.example.jairosofttimesheet.viewmodel.AttendanceViewModelFactory
+import com.example.jairosofttimesheet.data.remote.RetrofitClient
+import com.example.jairosofttimesheet.data.repository.Repository
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 import java.io.OutputStream
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+
+
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
+fun AttendanceScreen() {
 
-    val locationText = "Davao City" // Placeholder for location
+    val factory = AttendanceViewModelFactory(
+        Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
+    )
+    val viewModel: AttendanceViewModel = viewModel(factory = factory)
+
+    val logs by viewModel.attendanceLogs.observeAsState(emptyList())
+    val isClockedIn by viewModel.isClockedIn.collectAsState()
+
 
     // Font setup
     val afacad = FontFamily(Font(R.font.afacad, FontWeight.Normal))
     val poppins = FontFamily(Font(R.font.poppinsregular, FontWeight.Normal))
 
-    // Collect state from ViewModel
-    val isClockedIn by viewModel.isClockedIn.collectAsState()
-
     //for download context
     val context = LocalContext.current
 
-    // Fake attendance list with placeholder data
-    val fakeAttendanceList = remember {
-        mutableStateListOf(
-            Triple("01/15/2025", "08:00 AM", "05:00 PM"),
-            Triple("02/01/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/10/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/20/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/22/2025", "08:00 AM", "05:00 PM"),
-            Triple("01/20/2025", "08:00 AM", "05:00 PM"),
-            Triple("01/25/2025", "08:00 AM", "05:00 PM"),
-            Triple("02/10/2025", "08:00 AM", "05:00 PM"),
-            Triple("02/14/2025", "08:00 AM", "05:00 PM"),
-            Triple("02/18/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/01/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/05/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/08/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/12/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/15/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/18/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/21/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/23/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/26/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/29/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/12/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/15/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/18/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/21/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/23/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/26/2025", "08:00 AM", "05:00 PM"),
-            Triple("03/29/2025", "08:00 AM", "05:00 PM"),
-        )
+    LaunchedEffect(Unit) {
+        viewModel.fetchAttendanceLogs()
     }
-
-    // For adding attendance and updating time out
-    LaunchedEffect(isClockedIn) {
-        if (isClockedIn) {
-            val date = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).format(Date()) // Placeholder date
-            val timeIn = "08:00 AM" // Placeholder time in
-            fakeAttendanceList.add(Triple(date, timeIn, "--")) // Add a new record with placeholder data
-        } else if (fakeAttendanceList.isNotEmpty() && fakeAttendanceList.last().third == "--") {
-            val timeOut = "05:00 PM" // Placeholder time out
-            val lastIndex = fakeAttendanceList.lastIndex
-            fakeAttendanceList[lastIndex] = fakeAttendanceList[lastIndex].copy(third = timeOut) // Update last record with time out
-        }
-    }
-
 
     Box(modifier = Modifier.fillMaxSize().background(gradientDBlue)) {
 
@@ -129,7 +100,19 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
                 modifier = Modifier
                     .size(24.dp)
                     .clickable {
-                        saveAttendanceToDownloads(fakeAttendanceList, context)
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+
+                        saveAttendanceToDownloads(
+                            logs.map {
+
+                                Triple(
+                                    dateFormat.format(Date((it.date ?: 0L) * 1000)),
+                                    dateFormat.format(Date((it.timeIn ?: 0L) * 1000)),
+                                    dateFormat.format(Date((it.timeOut ?: 0L) * 1000))
+                                )
+                            },
+                            context
+                        )
                     }
             )
         }
@@ -215,12 +198,11 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
             }
 
             // Attendance List Scrollable Section
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .weight(1f)
-            ) {
-                fakeAttendanceList.forEach { (date, timeIn, timeOut) ->
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
+
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(logs) { log ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -230,54 +212,27 @@ fun AttendanceScreen(viewModel: AttendanceViewModel = viewModel()) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = locationText.take(10) + if (locationText.length > 10) "..." else "",
+                            text = dateFormat.format(Date((log.date ?: 0L) * 1000L)),
                             fontFamily = afacad,
                             color = Color.White,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 5.dp),
                             fontSize = 11.sp
                         )
-
                         Text(
-                            text = date, // Placeholder for date
+                            text = timeFormat.format(Date((log.timeIn ?: 0L) * 1000L)),
                             fontFamily = afacad,
                             color = Color.White,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 5.dp),
                             fontSize = 11.sp
                         )
-
                         Text(
-                            text = timeIn, // Placeholder for time in
+                            text = timeFormat.format(Date((log.timeOut ?: 0L) * 1000L)),
                             fontFamily = afacad,
                             color = Color.White,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 5.dp),
-                            fontSize = 11.sp
-                        )
-
-                        Text(
-                            text = if (timeOut == "--") " -- " else timeOut, // Placeholder for time out
-                            fontFamily = afacad,
-                            color = Color.White,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 5.dp, end = 6.dp)
-                                .run {
-                                    if (timeOut == "--") {
-                                        this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp))
-                                    } else {
-                                        this
-                                    }
-                                },
                             fontSize = 11.sp
                         )
                     }
                 }
             }
+
         }
     }
 }

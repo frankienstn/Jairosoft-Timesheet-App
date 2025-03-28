@@ -27,15 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.compose.rememberNavController
 import com.example.jairosofttimesheet.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextAlign
-import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -74,17 +71,20 @@ import java.io.IOException
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.lifecycle.SavedStateHandle
+import com.example.jairosofttimesheet.viewmodel.AttendanceViewModelFactory
+import com.example.jairosofttimesheet.data.remote.RetrofitClient
+import com.example.jairosofttimesheet.data.repository.Repository
 import com.example.jairosofttimesheet.ui.theme.gradientDate
 import com.example.jairosofttimesheet.ui.theme.gradientOnGoing
 import com.example.jairosofttimesheet.ui.theme.gradientTrackedHours
 import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: AttendanceViewModel = viewModel(), profileViewModel: ProfileViewModel = viewModel()) {
+fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: AttendanceViewModel = viewModel(factory = AttendanceViewModelFactory(
+    Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
+)), profileViewModel: ProfileViewModel = viewModel()) {
     val isClockedIn by attendanceViewModel.isClockedIn.collectAsState()
 
     var timeCounter by remember { mutableLongStateOf(0L) }
@@ -192,6 +192,16 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     val scale3 = remember { Animatable(0.8f) }
     val alpha4 = remember { Animatable(0f) }
     val scale4 = remember { Animatable(0.8f) }
+
+//    val factory = AttendanceViewModelFactory(
+//        Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
+//    )
+//    val viewModel: AttendanceViewModel = viewModel(
+//        factory = AttendanceViewModelFactory(
+//            Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
+//        )
+//    )
+
 
     LaunchedEffect(Unit) {
         delay(20)

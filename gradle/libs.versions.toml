@@ -30,6 +30,7 @@ playServicesMaps = "19.1.0"
 navigationCommonKtxVersion = "2.8.9"
 retrofit = "2.11.0"
 moshi = "1.14.0"
+runtimeLivedataVersion = "1.7.8"
 
 [libraries]
 firebase-firestore-ktx = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebaseFirestore" }
@@ -72,6 +73,7 @@ maps-utils-ktx = { module = "com.google.maps.android:maps-utils-ktx", version.re
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 androidx-navigation-common-ktx = { group = "androidx.navigation", name = "navigation-common-ktx", version.ref = "navigationCommonKtxVersion" }
+androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedataVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
