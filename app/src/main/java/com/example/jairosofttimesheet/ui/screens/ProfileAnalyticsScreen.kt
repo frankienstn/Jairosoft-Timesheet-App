@@ -24,15 +24,18 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.jairosofttimesheet.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.ui.text.style.TextAlign
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -42,12 +45,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.os.Looper
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.draw.clip
@@ -70,7 +69,6 @@ import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
 import java.io.IOException
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextOverflow
 import com.example.jairosofttimesheet.viewmodel.AttendanceViewModelFactory
 import com.example.jairosofttimesheet.data.remote.RetrofitClient
 import com.example.jairosofttimesheet.data.repository.Repository
@@ -173,7 +171,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
         runningTime % 60
     )
 
-
     // font
     val afacad = FontFamily(Font(R.font.afacad, FontWeight.Normal),)
     val afacadmedium = FontFamily(Font(R.font.afacadmedium),)
@@ -182,47 +179,46 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     val poppins = FontFamily(Font(R.font.poppinsregular, FontWeight.Normal))
     val poppinsextrabold = FontFamily(Font(R.font.poppinsextrabold, FontWeight.Normal))
 
-    //ANIMATIONS
-    // Animatable states
+    // Animation states
     val alpha1 = remember { Animatable(0f) }
-    val scale1 = remember { Animatable(0.8f) }
     val alpha2 = remember { Animatable(0f) }
-    val scale2 = remember { Animatable(0.8f) }
     val alpha3 = remember { Animatable(0f) }
-    val scale3 = remember { Animatable(0.8f) }
     val alpha4 = remember { Animatable(0f) }
+    val scale1 = remember { Animatable(0.8f) }
+    val scale2 = remember { Animatable(0.8f) }
+    val scale3 = remember { Animatable(0.8f) }
     val scale4 = remember { Animatable(0.8f) }
 
-//    val factory = AttendanceViewModelFactory(
-//        Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
-//    )
-//    val viewModel: AttendanceViewModel = viewModel(
-//        factory = AttendanceViewModelFactory(
-//            Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
-//        )
-//    )
+    // Smooth spring animation
+    val springSpec = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    )
 
+    // Smooth easing for fade
+    val fadeEasing = FastOutSlowInEasing
 
     LaunchedEffect(Unit) {
-        delay(20)
+        // Staggered animations with smoother timing
+        delay(50) // Initial delay before starting animations
         launch {
-            alpha1.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
-            scale1.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+            alpha1.animateTo(1f, animationSpec = tween(300, easing = fadeEasing))
+            scale1.animateTo(1f, animationSpec = springSpec)
         }
-        delay(40)
+        delay(100) // Increased delay between animations
         launch {
-            alpha2.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
-            scale2.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+            alpha2.animateTo(1f, animationSpec = tween(300, easing = fadeEasing))
+            scale2.animateTo(1f, animationSpec = springSpec)
         }
-        delay(60)
+        delay(150)
         launch {
-            alpha3.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
-            scale3.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+            alpha3.animateTo(1f, animationSpec = tween(300, easing = fadeEasing))
+            scale3.animateTo(1f, animationSpec = springSpec)
         }
-        delay(80)
+        delay(200)
         launch {
-            alpha4.animateTo(1f, animationSpec = tween(200, easing = FastOutSlowInEasing))
-            scale4.animateTo(1f, animationSpec = spring(stiffness = Spring.StiffnessVeryLow))
+            alpha4.animateTo(1f, animationSpec = tween(300, easing = fadeEasing))
+            scale4.animateTo(1f, animationSpec = springSpec)
         }
     }
 
@@ -424,9 +420,10 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             // Date Today
             Card(
                 modifier = Modifier
-                    .width(320.dp) // Reduced width
+                    .width(320.dp)
                     .height(50.dp)
-                    .graphicsLayer(alpha = alpha1.value, scaleX = scale1.value, scaleY = scale1.value)
+                    .alpha(alpha1.value)
+                    .scale(scale1.value)
                     .background(brush = gradientDate, shape = RoundedCornerShape(8.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
@@ -455,7 +452,8 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             Card(
                 modifier = Modifier
                     .size(320.dp, 63.dp)
-                    .graphicsLayer(alpha = alpha2.value, scaleX = scale2.value, scaleY = scale2.value)
+                    .alpha(alpha2.value)
+                    .scale(scale2.value)
                     .background(brush = gradientOnGoing, shape = RoundedCornerShape(8.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
@@ -490,7 +488,8 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                 modifier = Modifier
                     .size(320.dp, 350.dp)
                     .clickable { navController.navigate("TimesheetScreen") }
-                    .graphicsLayer(alpha = alpha3.value, scaleX = scale3.value, scaleY = scale3.value)
+                    .alpha(alpha3.value)
+                    .scale(scale3.value)
                     .background(brush = gradientTrackedHours, shape = RoundedCornerShape(8.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
@@ -620,7 +619,9 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             Card(
                 modifier = Modifier
                     .size(320.dp, 337.dp)
-                    .graphicsLayer(alpha = alpha4.value, scaleX = scale4.value, scaleY = scale4.value),
+                    .alpha(alpha4.value)
+                    .scale(scale4.value)
+                    .background(Color.Transparent),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {

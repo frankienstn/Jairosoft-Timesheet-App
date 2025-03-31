@@ -2,56 +2,59 @@ package com.example.jairosofttimesheet.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.jairosofttimesheet.R
 import android.widget.Toast
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.jairosofttimesheet.ui.viewmodel.LoginViewModel
-
+import com.example.jairosofttimesheet.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(navController: NavController) {
-    var email by remember { mutableStateOf("") } // Email state
-    var password by remember { mutableStateOf("") } // Password state
-    var rememberMeChecked by remember { mutableStateOf(false) } // Checkbox state
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var rememberMeChecked by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val viewModel: LoginViewModel = viewModel()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val loginMessage by viewModel.loginMessage.collectAsState()
+
+    // Check for auto-login when the screen is created
+    LaunchedEffect(Unit) {
+        if (viewModel.checkAutoLogin(context)) {
+            navController.navigate("NavigationScreen") {
+                popUpTo("loginScreen") { inclusive = true }
+            }
+        }
+    }
+
+    // Handle login success
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            navController.navigate("NavigationScreen") {
+                popUpTo("loginScreen") { inclusive = true }
+            }
+        }
+    }
 
     // font
     val afacad = FontFamily(
@@ -90,7 +93,7 @@ fun LoginScreen(navController: NavController) {
         )
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it }, // Update state on input
+            onValueChange = { email = it },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp, bottom = 12.dp),
@@ -111,7 +114,6 @@ fun LoginScreen(navController: NavController) {
             color = Color(0xFFFFFFFF),
             modifier = Modifier.align(Alignment.Start)
         )
-        var passwordVisible by remember { mutableStateOf(false) }
 
         OutlinedTextField(
             value = password,
@@ -134,7 +136,6 @@ fun LoginScreen(navController: NavController) {
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             placeholder = { Text("Enter account password", fontFamily = afacad) }
         )
-
 
         // Remember Me & Forgot Password Row
         Row(
@@ -159,32 +160,14 @@ fun LoginScreen(navController: NavController) {
             TextButton(onClick = { navController.navigate("forgotPasswordScreen") }) {
                 Text("Forgot Password?", fontSize = 14.sp, fontFamily = afacad)
             }
-
         }
-
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Login Button
-        val context = LocalContext.current
-        val viewModel: LoginViewModel = viewModel()
-        val loginSuccess by viewModel.loginSuccess.collectAsState()
-        val loginMessage by viewModel.loginMessage.collectAsState()
-
-        LaunchedEffect(loginSuccess) {
-            if (loginSuccess) {
-                navController.navigate("NavigationScreen") {
-                    popUpTo("loginScreen") { inclusive = true }
-                }
-            }
-        }
-
-
-
-
         Button(
             onClick = {
-                viewModel.login(email, password)
+                viewModel.login(email, password, rememberMeChecked, context)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -194,20 +177,14 @@ fun LoginScreen(navController: NavController) {
             Text(text = "Login", fontSize = 16.sp, fontFamily = afacad)
         }
 
-
         Spacer(modifier = Modifier.height(150.dp))
 
         loginMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.clearMessage()
         }
-
     }
-
 }
-
-
-
 
 @Preview(showBackground = true)
 @Composable

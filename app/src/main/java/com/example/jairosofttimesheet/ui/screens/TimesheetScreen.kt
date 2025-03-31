@@ -52,7 +52,7 @@ fun TimesheetScreen(navController: NavController) {
         .fillMaxSize()
         .background(gradientDBlue)
         .padding(16.dp))
-        {
+    {
         // Header Text
         Text(text = "Timesheet", fontFamily = poppins, fontSize = 20.sp, color = Color(color = 0xFFFFFFFF))
 

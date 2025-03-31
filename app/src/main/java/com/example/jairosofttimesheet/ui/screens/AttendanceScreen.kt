@@ -45,7 +45,12 @@ import java.io.OutputStream
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 
-
+data class AttendanceRecord(
+    val location: String,
+    val date: String,
+    val timeIn: String,
+    val timeOut: String
+)
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,15 +105,16 @@ fun AttendanceScreen() {
                 modifier = Modifier
                     .size(24.dp)
                     .clickable {
-                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
                         saveAttendanceToDownloads(
                             logs.map {
-
-                                Triple(
-                                    dateFormat.format(Date((it.date ?: 0L) * 1000)),
-                                    dateFormat.format(Date((it.timeIn ?: 0L) * 1000)),
-                                    dateFormat.format(Date((it.timeOut ?: 0L) * 1000))
+                                AttendanceRecord(
+                                    location = "Location", // Replace with actual location if available
+                                    date = dateFormat.format(Date((it.date ?: 0L) * 1000)),
+                                    timeIn = timeFormat.format(Date((it.timeIn ?: 0L) * 1000)),
+                                    timeOut = timeFormat.format(Date((it.timeOut ?: 0L) * 1000))
                                 )
                             },
                             context
@@ -208,27 +214,45 @@ fun AttendanceScreen() {
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp)
                             .height(IntrinsicSize.Min),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Location column (weight: 1f)
+                        Text(
+                            text = "Location",  // Replace with actual location if available
+                            fontFamily = afacad,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Date column (weight: 1f)
                         Text(
                             text = dateFormat.format(Date((log.date ?: 0L) * 1000L)),
                             fontFamily = afacad,
                             color = Color.White,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(1f)
                         )
-                        Text(
-                            text = timeFormat.format(Date((log.timeIn ?: 0L) * 1000L)),
-                            fontFamily = afacad,
-                            color = Color.White,
-                            fontSize = 11.sp
-                        )
-                        Text(
-                            text = timeFormat.format(Date((log.timeOut ?: 0L) * 1000L)),
-                            fontFamily = afacad,
-                            color = Color.White,
-                            fontSize = 11.sp
-                        )
+
+                        // Time In and Time Out columns (weight: 2f)
+                        Row(
+                            modifier = Modifier.weight(2f),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = timeFormat.format(Date((log.timeIn ?: 0L) * 1000L)),
+                                fontFamily = afacad,
+                                color = Color.White,
+                                fontSize = 11.sp
+                            )
+                            Text(
+                                text = timeFormat.format(Date((log.timeOut ?: 0L) * 1000L)),
+                                fontFamily = afacad,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(end = 15.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -238,14 +262,14 @@ fun AttendanceScreen() {
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
-fun saveAttendanceToDownloads(attendanceList: List<Triple<String, String, String>>, context: Context) {
+fun saveAttendanceToDownloads(attendanceList: List<AttendanceRecord>, context: Context) {
     val fileName = "Attendance_${System.currentTimeMillis()}.txt"
     val fileContents = buildString {
         append("Attendance Record\n\n")
-        append("Date\t\tTime In\t\tTime Out\n")
-        append("=================================\n")
-        attendanceList.forEach { (date, timeIn, timeOut) ->
-            append("$date\t$timeIn\t$timeOut\n")
+        append("Location\t\tDate\t\tTime In\t\tTime Out\n")
+        append("====================================================\n")
+        attendanceList.forEach { record ->
+            append("${record.location}\t${record.date}\t${record.timeIn}\t${record.timeOut}\n")
         }
     }
 
