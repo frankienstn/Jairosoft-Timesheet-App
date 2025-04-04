@@ -1,55 +1,60 @@
 package com.example.jairosofttimesheet.ui.screens
 
 import android.content.ContentValues
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.jairosofttimesheet.R
-import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
-import com.example.jairosofttimesheet.viewmodel.AttendanceViewModelFactory
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jairosofttimesheet.R
 import com.example.jairosofttimesheet.data.remote.RetrofitClient
 import com.example.jairosofttimesheet.data.repository.Repository
 import com.example.jairosofttimesheet.ui.theme.gradientDBlue
-import java.io.OutputStream
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import com.example.jairosofttimesheet.viewmodel.AttendanceViewModel
+import com.example.jairosofttimesheet.viewmodel.AttendanceViewModelFactory
+import com.itextpdf.kernel.colors.DeviceRgb
+import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.layout.Document
+import com.itextpdf.layout.element.Cell
+import com.itextpdf.layout.element.Paragraph
+import com.itextpdf.layout.element.Table
+import com.itextpdf.layout.properties.TextAlignment
+import com.itextpdf.layout.properties.UnitValue
+import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class AttendanceRecord(
     val location: String,
     val date: String,
     val timeIn: String,
-    val timeOut: String
+    val timeOut: String,
+    val status: String
 )
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -112,9 +117,10 @@ fun AttendanceScreen() {
                             logs.map {
                                 AttendanceRecord(
                                     location = "Location", // Replace with actual location if available
-                                    date = dateFormat.format(Date((it.date ?: 0L) * 1000)),
-                                    timeIn = timeFormat.format(Date((it.timeIn ?: 0L) * 1000)),
-                                    timeOut = timeFormat.format(Date((it.timeOut ?: 0L) * 1000))
+                                    date = dateFormat.format(Date(it.Date ?: 0L)),
+                                    timeIn = timeFormat.format(Date(it.timeIn ?: 0L)),
+                                    timeOut = timeFormat.format(Date(it.timeOut ?: 0L)),
+                                    status = it.attendanceStatus ?: ""
                                 )
                             },
                             context
@@ -140,15 +146,15 @@ fun AttendanceScreen() {
                     fontFamily = poppins,
                     fontSize = 11.sp,
                     color = Color.White,
-                    modifier = Modifier
-                        .weight(1f) // Takes 1 fraction of the space
+                    modifier = Modifier.weight(0.8f)
                 )
 
                 Row(
                     modifier = Modifier
-                        .clickable { showDatePicker = true }
-                        .weight(1f), // Takes 1 fraction of the space
-                    verticalAlignment = Alignment.CenterVertically
+                        .weight(0.8f)
+                        .clickable { showDatePicker = true },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
                 ) {
                     Text(
                         text = "Date",
@@ -158,52 +164,66 @@ fun AttendanceScreen() {
                     )
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Dropdown Arrow",
+                        contentDescription = "Select Date",
                         tint = Color.White,
-                        modifier = Modifier
-                            .padding(start = 4.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                if (showDatePicker) {
-                    DatePickerDialog(
-                        onDismissRequest = { showDatePicker = false },
-                        confirmButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text("OK")
+                Text(
+                    text = "Time In",
+                    fontFamily = poppins,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    modifier = Modifier.weight(0.8f)
+                )
+
+                Text(
+                    text = "Time Out",
+                    fontFamily = poppins,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    modifier = Modifier.weight(0.8f)
+                )
+
+                Text(
+                    text = "Status",
+                    fontFamily = poppins,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .padding(end = 8.dp)
+                )
+            }
+
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState()
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDatePicker = false
+                            datePickerState.selectedDateMillis?.let { selectedDate ->
+                                viewModel.filterLogsByDate(selectedDate)
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text("Cancel")
-                            }
+                        }) {
+                            Text("OK")
                         }
-                    ) {
-                        DatePicker(state = rememberDatePickerState())
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
                     }
-                }
-
-                Row(
-                    modifier = Modifier.weight(2f),
-                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Time In",
-                        fontFamily = poppins,
-                        fontSize = 11.sp,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Time Out",
-                        fontFamily = poppins,
-                        fontSize = 11.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(end = 15.dp)
+                    DatePicker(
+                        state = datePickerState
                     )
                 }
             }
 
-            // Attendance List Scrollable Section
+            // Attendance List
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
@@ -212,47 +232,57 @@ fun AttendanceScreen() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                             .height(IntrinsicSize.Min),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Location column (weight: 1f)
+                        // Location column
                         Text(
-                            text = "Location",  // Replace with actual location if available
+                            text = "Location",
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(0.8f)
                         )
 
-                        // Date column (weight: 1f)
+                        // Date column
                         Text(
-                            text = dateFormat.format(Date((log.date ?: 0L) * 1000L)),
+                            text = dateFormat.format(Date(log.Date ?: 0L)),
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(0.8f)
                         )
 
-                        // Time In and Time Out columns (weight: 2f)
-                        Row(
-                            modifier = Modifier.weight(2f),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = timeFormat.format(Date((log.timeIn ?: 0L) * 1000L)),
-                                fontFamily = afacad,
-                                color = Color.White,
-                                fontSize = 11.sp
-                            )
-                            Text(
-                                text = timeFormat.format(Date((log.timeOut ?: 0L) * 1000L)),
-                                fontFamily = afacad,
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(end = 15.dp)
-                            )
-                        }
+                        // Time In column
+                        Text(
+                            text = timeFormat.format(Date(log.timeIn ?: 0L)),
+                            fontFamily = afacad,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(0.8f)
+                        )
+
+                        // Time Out column
+                        Text(
+                            text = timeFormat.format(Date(log.timeOut ?: 0L)),
+                            fontFamily = afacad,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            modifier = Modifier.weight(0.8f)
+                        )
+
+                        // Status column
+                        Text(
+                            text = log.attendanceStatus ?: "",
+                            fontFamily = afacad,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .weight(0.8f)
+                                .padding(end = 8.dp)
+                        )
                     }
                 }
             }
@@ -263,35 +293,72 @@ fun AttendanceScreen() {
 
 @RequiresApi(Build.VERSION_CODES.Q)
 fun saveAttendanceToDownloads(attendanceList: List<AttendanceRecord>, context: Context) {
-    val fileName = "Attendance_${System.currentTimeMillis()}.txt"
-    val fileContents = buildString {
-        append("Attendance Record\n\n")
-        append("Location\t\tDate\t\tTime In\t\tTime Out\n")
-        append("====================================================\n")
-        attendanceList.forEach { record ->
-            append("${record.location}\t${record.date}\t${record.timeIn}\t${record.timeOut}\n")
-        }
-    }
-
     try {
+        // Create PDF document in memory first
+        val outputStream = ByteArrayOutputStream()
+        val pdfWriter = PdfWriter(outputStream)
+        val pdfDocument = PdfDocument(pdfWriter)
+        val document = Document(pdfDocument)
+
+        // Add title
+        val title = Paragraph("Attendance Record")
+            .setFontSize(20f)
+            .setTextAlignment(TextAlignment.CENTER)
+            .setBold()
+        document.add(title)
+        document.add(Paragraph("\n")) // Add some space
+
+        // Create table
+        val table = Table(UnitValue.createPercentArray(floatArrayOf(20f, 20f, 20f, 20f, 20f)))
+            .useAllAvailableWidth()
+
+        // Add headers with styling
+        val headerColor = DeviceRgb(16, 22, 31) // Dark blue color
+        val headerTextColor = DeviceRgb(255, 255, 255) // White color
+
+        arrayOf("Location", "Date", "Time In", "Time Out", "Status").forEach { headerText ->
+            table.addHeaderCell(
+                Cell().add(Paragraph(headerText))
+                    .setBackgroundColor(headerColor)
+                    .setFontColor(headerTextColor)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setBold()
+            )
+        }
+
+        // Add data rows
+        attendanceList.forEach { record ->
+            arrayOf(record.location, record.date, record.timeIn, record.timeOut, record.status).forEach { text ->
+                table.addCell(
+                    Cell().add(Paragraph(text))
+                        .setTextAlignment(TextAlignment.CENTER)
+                )
+            }
+        }
+
+        document.add(table)
+        document.close()
+
+        // Save the PDF file
+        val fileName = "Attendance_${System.currentTimeMillis()}.pdf"
         val resolver = context.contentResolver
         val contentValues = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
             put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
 
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
         uri?.let {
-            resolver.openOutputStream(it)?.use { outputStream: OutputStream ->
-                outputStream.write(fileContents.toByteArray())
+            resolver.openOutputStream(it)?.use { stream ->
+                stream.write(outputStream.toByteArray())
             }
-            Toast.makeText(context, "File saved to Downloads", Toast.LENGTH_LONG).show()
-        } ?: Toast.makeText(context, "Failed to save file", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "PDF saved to Downloads", Toast.LENGTH_LONG).show()
+        } ?: Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_LONG).show()
 
     } catch (e: Exception) {
         e.printStackTrace()
-        Toast.makeText(context, "Error saving file", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }
 

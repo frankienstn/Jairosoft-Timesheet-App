@@ -2,10 +2,14 @@ package com.example.jairosofttimesheet.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.jairosofttimesheet.data.model.AttendanceLog
+import com.example.jairosofttimesheet.data.remote.RetrofitClient
+import com.example.jairosofttimesheet.data.repository.Repository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,6 +29,17 @@ open class ProfileViewModel : ViewModel() {
 
     private var clockInTimes = mutableMapOf<String, Long>()
     private var job: Job? = null
+
+    private val repository = Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
+
+    private val _attendanceLogs = MutableStateFlow<List<AttendanceLog>>(emptyList())
+    val attendanceLogs: StateFlow<List<AttendanceLog>> = _attendanceLogs.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            fetchAttendanceLogs()
+        }
+    }
 
     fun clockIn(day: String) {
         if (!_isClockedIn.value) {
@@ -84,5 +99,17 @@ open class ProfileViewModel : ViewModel() {
     private fun stopTimer() {
         job?.cancel()
         _runningTime.value = 0
+    }
+
+    private suspend fun fetchAttendanceLogs() {
+        try {
+            repository.getAttendanceLogs { success, logs, errorMessage ->
+                if (success && logs != null) {
+                    _attendanceLogs.value = logs
+                }
+            }
+        } catch (e: Exception) {
+            // Handle error
+        }
     }
 }

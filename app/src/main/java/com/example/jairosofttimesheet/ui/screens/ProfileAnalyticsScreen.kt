@@ -77,6 +77,9 @@ import com.example.jairosofttimesheet.ui.theme.gradientOnGoing
 import com.example.jairosofttimesheet.ui.theme.gradientTrackedHours
 import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
 import java.util.Calendar
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
+import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -661,43 +664,13 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 modifier = Modifier.weight(1f)
                             )
 
-                            Row(
-                                modifier = Modifier
-                                    .clickable { showDatePicker = true }
-                                    .weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Date",
-                                    fontFamily = poppins,
-                                    fontSize = 11.sp,
-                                    color = Color.White
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Dropdown Arrow",
-                                    tint = Color.White,
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
-
-                            if (showDatePicker) {
-                                DatePickerDialog(
-                                    onDismissRequest = { showDatePicker = false },
-                                    confirmButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("OK")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                ) {
-                                    DatePicker(state = rememberDatePickerState())
-                                }
-                            }
+                            Text(
+                                text = "Date",
+                                fontFamily = poppins,
+                                fontSize = 11.sp,
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
 
                             Row(
                                 modifier = Modifier.weight(2f),
@@ -719,70 +692,57 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             }
                         }
 
-                        val attendanceList by profileViewModel.attendanceList.collectAsState()
+                        val attendanceLogs by profileViewModel.attendanceLogs.collectAsState()
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
                         Column(
                             modifier = Modifier
-                                .verticalScroll(rememberScrollState())
-                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
                         ) {
-                            attendanceList.forEach { (date, timeIn, timeOut) ->
+                            // Take only the last 5 logs
+                            attendanceLogs.takeLast(5).forEach { log ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 8.dp)
-                                        .height(IntrinsicSize.Min),
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = locationText.take(10) + if (locationText.length > 10) "..." else "",
+                                        text = "Location",
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = date,
+                                        text = dateFormat.format(Date(log.Date ?: 0L)),
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = timeIn,
+                                        text = timeFormat.format(Date(log.timeIn ?: 0L)),
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = if (timeOut == "--") {
+                                        text = if (log.timeOut == null) {
                                             " -- "
                                         } else {
-                                            timeOut
+                                            timeFormat.format(Date(log.timeOut))
                                         },
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(start = 5.dp, end = 6.dp)
-                                            .run {
-                                                if (timeOut == "--") {
-                                                    this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp))
-                                                } else {
-                                                    this
-                                                }
-                                            },
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
                                 }
@@ -822,6 +782,7 @@ fun getCurrentDay(): String {
         else -> ""
     }
 }
+
 
 
 
