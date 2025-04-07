@@ -371,13 +371,23 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 val locationCallback = object : LocationCallback() {
                                     override fun onLocationResult(locationResult: LocationResult) {
                                         locationResult.lastLocation?.let { location ->
-                                            userLocation =
-                                                LatLng(location.latitude, location.longitude)
-                                            locationText =
-                                                "Lat: ${location.latitude}, Lng: ${location.longitude}"
+                                            userLocation = LatLng(location.latitude, location.longitude)
+
+                                            val geocoder = Geocoder(context, Locale.getDefault())
+                                            locationText = try {
+                                                val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                                                if (!addressList.isNullOrEmpty()) {
+                                                    addressList[0].locality ?: addressList[0].subAdminArea ?: "Unknown Location"
+                                                } else {
+                                                    "Unknown Location"
+                                                }
+                                            } catch (e: IOException) {
+                                                "Error fetching location"
+                                            }
                                         }
                                     }
                                 }
+
 
                                 // Start location updates
                                 LaunchedEffect(Unit) {
