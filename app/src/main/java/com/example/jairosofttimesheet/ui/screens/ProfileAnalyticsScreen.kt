@@ -77,6 +77,10 @@ import com.example.jairosofttimesheet.ui.theme.gradientOnGoing
 import com.example.jairosofttimesheet.ui.theme.gradientTrackedHours
 import com.example.jairosofttimesheet.viewmodel.ProfileViewModel
 import java.util.Calendar
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.jairosofttimesheet.ui.theme.JairosoftTimesheetTheme
+import androidx.navigation.compose.rememberNavController
+import com.example.jairosofttimesheet.data.preferences.UserPreferences
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -84,6 +88,18 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     Repository(RetrofitClient.authApiService, RetrofitClient.attendanceApiService)
 )), profileViewModel: ProfileViewModel = viewModel()) {
     val isClockedIn by attendanceViewModel.isClockedIn.collectAsState()
+    val context = LocalContext.current
+    val userPreferences = remember { UserPreferences(context) }
+    val userEmail = remember { userPreferences.getEmail() }
+    val username = remember { 
+        userEmail?.let { email ->
+            // Extract username from email (part before @)
+            val usernamePart = email.substringBefore('@')
+            // Remove numbers and capitalize first letter
+            usernamePart.replace(Regex("[0-9]"), "")
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        } ?: "User"
+    }
 
     var timeCounter by remember { mutableLongStateOf(0L) }
     val scrollState = rememberScrollState()
@@ -118,7 +134,6 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
     }
 
     // Location permission granted, request location updates
-    val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val locationRequest = LocationRequest.create().apply {
         priority = Priority.PRIORITY_HIGH_ACCURACY
@@ -248,7 +263,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
             ) {
                 Column {
                     Text(
-                        text = "Hi, User",
+                        text = "Hi, $username!",
                         color = Color(0xFF2E7BE1),
                         fontSize = 30.sp,
                         fontFamily = montserratextrabold
@@ -356,13 +371,23 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 val locationCallback = object : LocationCallback() {
                                     override fun onLocationResult(locationResult: LocationResult) {
                                         locationResult.lastLocation?.let { location ->
-                                            userLocation =
-                                                LatLng(location.latitude, location.longitude)
-                                            locationText =
-                                                "Lat: ${location.latitude}, Lng: ${location.longitude}"
+                                            userLocation = LatLng(location.latitude, location.longitude)
+
+                                            val geocoder = Geocoder(context, Locale.getDefault())
+                                            locationText = try {
+                                                val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                                                if (!addressList.isNullOrEmpty()) {
+                                                    addressList[0].locality ?: addressList[0].subAdminArea ?: "Unknown Location"
+                                                } else {
+                                                    "Unknown Location"
+                                                }
+                                            } catch (e: IOException) {
+                                                "Error fetching location"
+                                            }
                                         }
                                     }
                                 }
+
 
                                 // Start location updates
                                 LaunchedEffect(Unit) {
@@ -661,43 +686,13 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                 modifier = Modifier.weight(1f)
                             )
 
-                            Row(
-                                modifier = Modifier
-                                    .clickable { showDatePicker = true }
-                                    .weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Date",
-                                    fontFamily = poppins,
-                                    fontSize = 11.sp,
-                                    color = Color.White
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Dropdown Arrow",
-                                    tint = Color.White,
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
-
-                            if (showDatePicker) {
-                                DatePickerDialog(
-                                    onDismissRequest = { showDatePicker = false },
-                                    confirmButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("OK")
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { showDatePicker = false }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                ) {
-                                    DatePicker(state = rememberDatePickerState())
-                                }
-                            }
+                            Text(
+                                text = "Date",
+                                fontFamily = poppins,
+                                fontSize = 11.sp,
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
 
                             Row(
                                 modifier = Modifier.weight(2f),
@@ -719,70 +714,57 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             }
                         }
 
-                        val attendanceList by profileViewModel.attendanceList.collectAsState()
+                        val attendanceLogs by profileViewModel.attendanceLogs.collectAsState()
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
                         Column(
                             modifier = Modifier
-                                .verticalScroll(rememberScrollState())
-                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
                         ) {
-                            attendanceList.forEach { (date, timeIn, timeOut) ->
+                            // Take only the last 5 logs
+                            attendanceLogs.takeLast(5).forEach { log ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 8.dp)
-                                        .height(IntrinsicSize.Min),
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = locationText.take(10) + if (locationText.length > 10) "..." else "",
+                                        text = "Location",
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = date,
+                                        text = dateFormat.format(Date(log.Date ?: 0L)),
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = timeIn,
+                                        text = timeFormat.format(Date(log.timeIn ?: 0L)),
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(end = 5.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
 
                                     Text(
-                                        text = if (timeOut == "--") {
+                                        text = if (log.timeOut == null) {
                                             " -- "
                                         } else {
-                                            timeOut
+                                            timeFormat.format(Date(log.timeOut))
                                         },
                                         fontFamily = afacad,
                                         color = Color.White,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(start = 5.dp, end = 6.dp)
-                                            .run {
-                                                if (timeOut == "--") {
-                                                    this.then(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp))
-                                                } else {
-                                                    this
-                                                }
-                                            },
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 11.sp
                                     )
                                 }
@@ -822,6 +804,7 @@ fun getCurrentDay(): String {
         else -> ""
     }
 }
+
 
 
 

@@ -47,6 +47,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    // PDF Generation
+    implementation ("com.itextpdf:itext7-core:7.2.5")
+    implementation ("com.itextpdf:kernel:7.2.5")
+    implementation ("com.itextpdf:layout:7.2.5")
+    implementation ("com.itextpdf:io:7.2.5")
+
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation(libs.accompanist.permissions.v0301)

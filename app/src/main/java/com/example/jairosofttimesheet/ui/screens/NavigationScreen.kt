@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,11 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.jairosofttimesheet.R
+import com.example.jairosofttimesheet.viewmodel.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -50,7 +56,10 @@ fun NavigationScreen(
 fun TopBar(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     var isLogoutClicked by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     val logoutScale by animateFloatAsState(if (isLogoutClicked) 1.1f else 1f, label = "LogoutScale")
+    val context = LocalContext.current
+    val loginViewModel: LoginViewModel = viewModel()
 
     Row(
         modifier = Modifier
@@ -72,13 +81,39 @@ fun TopBar(navController: NavController) {
                 .size(28.dp, 28.dp)
                 .clickable {
                     isLogoutClicked = true
-                    navController.navigate("LoginScreen")
+                    showLogoutDialog = true
                     coroutineScope.launch {
                         delay(300)
                         isLogoutClicked = false
                     }
                 }
                 .scale(logoutScale)
+        )
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout Confirmation") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        loginViewModel.logout(context)
+                        navController.navigate("StartUpScreen") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text("Yes, log me out!")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("No")
+                }
+            }
         )
     }
 }

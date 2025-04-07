@@ -165,67 +165,20 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        composable("ProfileAnalyticsScreen",
-//                            enterTransition = {
-//                                when (initialState.destination.route) {
-//                                    "AttendanceScreen" -> slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(600)) // From Left
-//                                    "TimesheetScreen" -> slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(600)) // From Right
-//                                    "LoginScreen" -> slideInVertically(initialOffsetY = { it }, animationSpec = tween(600)) // From Bottom
-//                                    else -> EnterTransition.None
-//                                }
-//                            },
-//                            exitTransition = {
-//                                when (targetState.destination.route) {
-//                                    "AttendanceScreen" -> slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(600)) // To Left
-//                                    "TimesheetScreen" -> slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(600))  // To Right
-//                                    "LoginScreen" -> slideOutVertically(targetOffsetY = { it }, animationSpec = tween(600)) // To Bottom
-//                                    else -> ExitTransition.None
-//                                }
-//                            }
-                        ) {
+                        composable("ProfileAnalyticsScreen") {
                             NavigationScreen(navController = navController) {
                                 ProfileAnalyticsScreen(navController)
                             }
                         }
 
-                        composable("AttendanceScreen",
-//                            enterTransition = {
-//                                when (initialState.destination.route) {
-//                                    "ProfileAnalyticsScreen" -> slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(600))
-//                                    "TimesheetScreen" -> slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(600))
-//                                    else -> EnterTransition.None
-//                                }
-//                            },
-//                            exitTransition = {
-//                                when (targetState.destination.route) {
-//                                    "ProfileAnalyticsScreen" -> slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(600))
-//                                    "TimesheetScreen" -> slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(600))
-//                                    else -> ExitTransition.None
-//                                }
-//                            }
-                        ) {
+                        composable("AttendanceScreen") {
                             NavigationScreen(navController = navController) {
                                 AttendanceScreen()
                             }
                         }
 
 
-                        composable("TimesheetScreen",
-//                            enterTransition = {
-//                                when (initialState.destination.route) {
-//                                    "ProfileAnalyticsScreen" -> slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(600))
-//                                    "AttendanceScreen" -> slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(600))
-//                                    else -> EnterTransition.None
-//                                }
-//                            },
-//                            exitTransition = {
-//                                when (targetState.destination.route) {
-//                                    "ProfileAnalyticsScreen" -> slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(600))
-//                                    "AttendanceScreen" -> slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(600))
-//                                    else -> ExitTransition.None
-//                                }
-//                            }
-                        ) {
+                        composable("TimesheetScreen") {
                             NavigationScreen(navController = navController) {
                                 TimesheetScreen(navController)
                             }

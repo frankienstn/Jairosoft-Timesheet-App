@@ -33,12 +33,12 @@ data class AttendanceLog(
     @Json(name = "Created By") val createdBy: String?,
     val _id: String?,
     val User_id: String?,
-    val timeOut: Long?,
-    val date: Long?,
-    val attendanceStatus: String?,
-    val createdDate: Long?,
-    val modifiedDate: Long?,
-    val timeIn: Long?
+    @Json(name = "time-out") val timeOut: Long?,
+    val Date: Long?,
+    @Json(name = "Attendance Status") val attendanceStatus: String?,
+    @Json(name = "Created Date") val createdDate: Long?,
+    @Json(name = "Modified Date") val modifiedDate: Long?,
+    @Json(name = "time-in") val timeIn: Long?
 )
 
 

@@ -9,7 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 private const val BASE_URL = "https://timesheet-63231.bubbleapps.io/api/1.1/wf/"
-private const val AUTH_TOKEN = "bus|1741329443584x643073812085500400|1743187390910x786394204105967700"
+private const val AUTH_TOKEN = "bus|1741329443584x643073812085500400|1743400412014x556387795990054300"
 
 // Moshi Adapter
 private val moshi = Moshi.Builder()
