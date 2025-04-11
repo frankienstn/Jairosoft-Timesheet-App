@@ -167,7 +167,9 @@ fun LoginScreen(navController: NavController) {
         // Login Button
         Button(
             onClick = {
-                viewModel.login(email, password, rememberMeChecked, context)
+                // Comment out API-related code
+                // viewModel.login(email, password, rememberMeChecked, context)
+                navController.navigate("ProfileAnalyticsScreen")
             },
             modifier = Modifier
                 .fillMaxWidth()
