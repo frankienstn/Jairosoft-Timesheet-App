@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,14 +47,8 @@ import com.itextpdf.layout.properties.UnitValue
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-
-data class AttendanceRecord(
-    val location: String,
-    val date: String,
-    val timeIn: String,
-    val timeOut: String,
-    val status: String
-)
+import com.example.jairosofttimesheet.data.model.AttendanceRecord
+import com.example.jairosofttimesheet.data.model.AttendanceLogUI
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,9 +60,9 @@ fun AttendanceScreen() {
     )
     val viewModel: AttendanceViewModel = viewModel(factory = factory)
 
-    val logs by viewModel.attendanceLogs.observeAsState(emptyList())
+    // Comment out API-related code
+    // val logs by viewModel.attendanceLogs.observeAsState(emptyList())
     val isClockedIn by viewModel.isClockedIn.collectAsState()
-
 
     // Font setup
     val afacad = FontFamily(Font(R.font.afacad, FontWeight.Normal))
@@ -79,7 +72,8 @@ fun AttendanceScreen() {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        viewModel.fetchAttendanceLogs()
+        // Comment out API-related code
+        // viewModel.fetchAttendanceLogs()
     }
 
     Box(modifier = Modifier.fillMaxSize().background(gradientDBlue)) {
@@ -113,18 +107,20 @@ fun AttendanceScreen() {
                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
-                        saveAttendanceToDownloads(
-                            logs.map {
-                                AttendanceRecord(
-                                    location = "Location", // Replace with actual location if available
-                                    date = dateFormat.format(Date(it.Date ?: 0L)),
-                                    timeIn = timeFormat.format(Date(it.timeIn ?: 0L)),
-                                    timeOut = timeFormat.format(Date(it.timeOut ?: 0L)),
-                                    status = it.attendanceStatus ?: ""
-                                )
-                            },
-                            context
-                        )
+                        // Create placeholder data for download
+                        val placeholderRecords = (1..30).map { day ->
+                            AttendanceRecord(
+                                location = "Davao City",
+                                date = dateFormat.format(Calendar.getInstance().apply {
+                                    set(2025, Calendar.MARCH, 11 + day - 1)
+                                }.time),
+                                timeIn = "8:00:00 AM",
+                                timeOut = "5:00:00 PM",
+                                status = "WholeDay"
+                            )
+                        }
+
+                        saveAttendanceToDownloads(placeholderRecords, context)
                     }
             )
         }
@@ -205,7 +201,7 @@ fun AttendanceScreen() {
                         TextButton(onClick = {
                             showDatePicker = false
                             datePickerState.selectedDateMillis?.let { selectedDate ->
-                                viewModel.filterLogsByDate(selectedDate)
+                                // viewModel.filterLogsByDate(selectedDate)
                             }
                         }) {
                             Text("OK")
@@ -227,8 +223,28 @@ fun AttendanceScreen() {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
 
+            // Create placeholder data
+            val placeholderLogs = (1..30).map { day ->
+                AttendanceLogUI(
+                    date = Calendar.getInstance().apply {
+                        set(2025, Calendar.MARCH, 11 + day - 1)
+                    }.timeInMillis,
+                    timeIn = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 8)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                    }.timeInMillis,
+                    timeOut = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 17)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                    }.timeInMillis,
+                    status = "WholeDay"
+                )
+            }
+
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(logs) { log ->
+                items(placeholderLogs) { log ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -239,7 +255,7 @@ fun AttendanceScreen() {
                     ) {
                         // Location column
                         Text(
-                            text = "Location",
+                            text = "Davao City",
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
@@ -248,7 +264,7 @@ fun AttendanceScreen() {
 
                         // Date column
                         Text(
-                            text = dateFormat.format(Date(log.Date ?: 0L)),
+                            text = dateFormat.format(Date(log.date)),
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
@@ -257,7 +273,7 @@ fun AttendanceScreen() {
 
                         // Time In column
                         Text(
-                            text = timeFormat.format(Date(log.timeIn ?: 0L)),
+                            text = timeFormat.format(Date(log.timeIn)),
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
@@ -266,7 +282,7 @@ fun AttendanceScreen() {
 
                         // Time Out column
                         Text(
-                            text = timeFormat.format(Date(log.timeOut ?: 0L)),
+                            text = timeFormat.format(Date(log.timeOut)),
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
@@ -275,7 +291,7 @@ fun AttendanceScreen() {
 
                         // Status column
                         Text(
-                            text = log.attendanceStatus ?: "",
+                            text = log.status,
                             fontFamily = afacad,
                             color = Color.White,
                             fontSize = 11.sp,
@@ -326,7 +342,7 @@ fun saveAttendanceToDownloads(attendanceList: List<AttendanceRecord>, context: C
             )
         }
 
-        // Add data rows
+        // Add data rows using placeholder data
         attendanceList.forEach { record ->
             arrayOf(record.location, record.date, record.timeIn, record.timeOut, record.status).forEach { text ->
                 table.addCell(

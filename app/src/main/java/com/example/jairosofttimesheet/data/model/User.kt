@@ -41,6 +41,24 @@ data class AttendanceLog(
     @Json(name = "time-in") val timeIn: Long?
 )
 
+data class AttendanceRecord(
+    val location: String,
+    val date: String,
+    val timeIn: String,
+    val timeOut: String,
+    val status: String
+)
+
+data class AttendanceLogUI(
+    val date: Long,
+    val timeIn: Long,
+    val timeOut: Long,
+    val status: String
+)
+
+
+
+
 
 
 

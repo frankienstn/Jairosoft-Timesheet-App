@@ -52,7 +52,7 @@ fun StartUpScreen(navController: NavController? = null, isPreview: Boolean = fal
         // UI for the loading screen
         Box(
             modifier = Modifier
-                .fillMaxSize() // Ensuring the Box takes up the entire screen
+                .fillMaxSize()
                 .background(Color(0xFF10161F)), // the dark blue-ish background
             contentAlignment = Alignment.Center
         ) {

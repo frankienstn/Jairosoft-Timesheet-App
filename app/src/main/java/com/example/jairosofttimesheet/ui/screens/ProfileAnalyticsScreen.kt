@@ -704,17 +704,29 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                             }
                         }
 
-                        val attendanceLogs by profileViewModel.attendanceLogs.collectAsState()
+                        // Comment out API-related code
+                        // val attendanceLogs by profileViewModel.attendanceLogs.collectAsState()
                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         val timeFormat = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
+
+                        // Create placeholder data
+                        val placeholderLogs = (1..30).map { day ->
+                            Triple(
+                                "Davao City",
+                                dateFormat.format(Calendar.getInstance().apply {
+                                    set(2025, Calendar.MARCH, 11 + day - 1)
+                                }.time),
+                                Triple("8:00:00 AM", "5:00:00 PM", "WholeDay")
+                            )
+                        }
 
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                         ) {
-                            // Take only the last 5 logs
-                            attendanceLogs.takeLast(5).forEach { log ->
+                            // Take only the last 5 logs from placeholders
+                            placeholderLogs.takeLast(5).forEach { log ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -723,7 +735,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "Location",
+                                        text = log.first, // Location
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier.weight(1f),
@@ -731,7 +743,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     )
 
                                     Text(
-                                        text = dateFormat.format(Date(log.Date ?: 0L)),
+                                        text = log.second, // Date
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier.weight(1f),
@@ -739,7 +751,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     )
 
                                     Text(
-                                        text = timeFormat.format(Date(log.timeIn ?: 0L)),
+                                        text = log.third.first, // Time In
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier.weight(1f),
@@ -747,11 +759,7 @@ fun ProfileAnalyticsScreen(navController: NavController, attendanceViewModel: At
                                     )
 
                                     Text(
-                                        text = if (log.timeOut == null) {
-                                            " -- "
-                                        } else {
-                                            timeFormat.format(Date(log.timeOut))
-                                        },
+                                        text = log.third.second, // Time Out
                                         fontFamily = afacad,
                                         color = Color.White,
                                         modifier = Modifier.weight(1f),
